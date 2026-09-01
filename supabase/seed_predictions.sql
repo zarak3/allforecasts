@@ -19,11 +19,13 @@ insert into predictions (title, call, reasoning, published_at, resolves_at) valu
   'UK CPI inflation, August 2026',
   'TBD -- not yet drafted',
   null,
+  null,
   '2026-09-16'
 ),
 (
   'UK GDP quarterly, Q2 2026',
   'TBD -- not yet drafted',
+  null,
   null,
   '2026-09-30'
 );
