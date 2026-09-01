@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-paper text-ink font-serif;
+  }
+  a {
+    @apply text-accent;
+  }
+}
+
+@layer components {
+  .eyebrow {
+    @apply font-mono text-xs tracking-widest uppercase text-accent;
+  }
+  .section {
+    @apply py-12 border-t border-line;
+  }
+  .section-title {
+    @apply font-mono text-xs tracking-widest uppercase text-accent mb-6;
+  }
+  .card {
+    @apply bg-paper-raised border border-line rounded;
+  }
+  .btn {
+    @apply font-mono text-sm text-paper bg-accent px-4 py-2.5 rounded hover:opacity-90 transition;
+  }
+}
