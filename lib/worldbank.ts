@@ -42,7 +42,13 @@ export async function fetchAllCountries(): Promise<WorldBankCountry[]> {
     .map((c) => ({ code: c.iso2Code, name: c.name }));
 }
 
-interface WorldBankEntry {
+interface RawWorldBankEntry {
+  country: { id: string; value: string }; // country.id is the ISO2 code here (NOT countryiso2code -- that field doesn't exist on this endpoint)
+  date: string;
+  value: number | null;
+}
+
+export interface WorldBankEntry {
   countryiso2code: string;
   date: string;
   value: number | null;
@@ -61,6 +67,8 @@ export async function fetchWorldBankIndicatorForAllCountries(
   }
   const payload = await res.json();
   if (!Array.isArray(payload) || payload.length < 2 || !payload[1]) return [];
-  const rows = payload[1] as WorldBankEntry[];
-  return rows.filter((r) => knownCountryCodes.has(r.countryiso2code));
+  const rows = payload[1] as RawWorldBankEntry[];
+  return rows
+    .filter((r) => knownCountryCodes.has(r.country?.id))
+    .map((r) => ({ countryiso2code: r.country.id, date: r.date, value: r.value }));
 }

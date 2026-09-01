@@ -50,4 +50,4 @@ create policy "public read indicators" on indicators for select using (true);
 create policy "public read predictions" on predictions for select using (true);
 
 -- No insert/update/delete policies are created for the anon/public role,
--- so writes only work via the service_role key (used server-side by scripts/fetch_indicators.py).
+-- so writes only work via the service_role key (used server-side in app/api/cron/refresh-indicators).
