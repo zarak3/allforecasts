@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ZenoTeaser from "@/components/ZenoTeaser";
 
 const INDICATORS = [
   { name: "Flash composite PMI (July)", reading: "52.1, up from 49.3", direction: "up" },
@@ -153,6 +154,7 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      <ZenoTeaser />
     </main>
   );
 }

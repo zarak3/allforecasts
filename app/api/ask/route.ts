@@ -3,22 +3,24 @@ import { supabaseServer } from "@/lib/supabase";
 import { pearson } from "@/lib/stats";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 30;
+export const maxDuration = 60;
 
-// The "natural language interface" from the project's own vision: an
-// agentic loop where the model can call real tools against the live
-// database, but never invents a number itself -- exactly the "stats
-// compute, AI narrates" split the rest of the site holds to.
+// Zeno: the "natural language interface" from the project's own vision --
+// an agentic loop where the model can call real tools against the live
+// database, search the web, and read attached files, but never invents a
+// site number itself -- exactly the "stats compute, AI narrates" split the
+// rest of the site holds to.
 
-const SYSTEM_PROMPT = `You are the AllForecasts assistant. AllForecasts is a cross-domain forecasting site: it pulls public data (currently World Bank indicators across 217 countries -- GDP, debt, inflation, unemployment, oil/resource rents, health, education, population), screens for genuine statistical relationships, and publishes dated, falsifiable predictions. You can also search the live web for anything outside that database.
+const SYSTEM_PROMPT = `You are Zeno, the AllForecasts assistant. AllForecasts is a cross-domain forecasting site: it pulls public data (currently World Bank indicators across 217 countries -- GDP, debt, inflation, unemployment, oil/resource rents, health, education, population), screens for genuine statistical relationships, and publishes dated, falsifiable predictions. You can search the live web, and read files a user attaches.
 
 Ground rules:
 - For anything about a country's tracked indicators, AllForecasts' own predictions, or cross-indicator correlations: use the site tools (lookup_country_data, list_predictions, top_correlations). Never state a specific number for these unless it came from a tool call in this conversation.
-- For general or current-events questions the site's database doesn't cover (a specific news event, a different metric, something more recent than the site's data) -- use web_search and cite what you find. Say when you're relying on search results versus the site's own data, and note the search result's date/recency if it matters to the answer.
-- The site's real published predictions (in the predictions table) are hand-researched, cross-checked calls with real reasoning -- treat those as authoritative when asked about them.
-- The "GDP growth, next period (projected)" indicator (source: "AllForecasts model") is a naive statistical trend extrapolation, not a researched forecast -- say so if asked about it.
+- For general or current-events questions the site's database doesn't cover -- use web_search and cite what you find. Say when you're relying on search results versus the site's own data, and note recency if it matters.
+- If the user attached a file, its contents appear inline in their message -- read and use it directly.
+- The site's real published predictions are hand-researched, cross-checked calls with real reasoning -- treat those as authoritative when asked about them.
+- The "GDP growth, next period (projected)" indicator (source: "AllForecasts model") is a naive statistical trend extrapolation, not a researched forecast -- say so if asked.
 - Correlations from the insights tool are cross-sectional (across countries, right now) -- correlation, not causation, and not the lag/Granger-causality method the real predictions use.
-- Keep answers short and plain-language. This is a public-facing assistant, not a terminal.`;
+- Keep answers short, plain-language, and warm but professional. This is a public-facing assistant, not a terminal.`;
 
 const TOOLS = [
   {
@@ -138,28 +140,71 @@ interface AnthropicContentBlock {
   name?: string;
   input?: Record<string, unknown>;
   tool_use_id?: string;
-  content?: string;
+  content?: string | Record<string, unknown>[];
+  source?: { type: "base64"; media_type: string; data: string };
+}
+
+interface ClientMessage {
+  role: "user" | "assistant";
+  text: string;
+}
+
+interface Attachment {
+  name: string;
+  media_type: string;
+  data: string; // base64, no "data:...;base64," prefix
+}
+
+const MAX_HISTORY = 20;
+const MAX_ATTACHMENTS = 3;
+const MAX_INLINE_TEXT_CHARS = 12000;
+
+function decodeBase64Text(data: string): string {
+  return Buffer.from(data, "base64").toString("utf-8").slice(0, MAX_INLINE_TEXT_CHARS);
 }
 
 export async function POST(req: NextRequest) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
-      { error: "ANTHROPIC_API_KEY is not configured on the server yet." },
+      { error: "Zeno isn't switched on yet -- the site is still waiting on an Anthropic API key." },
       { status: 503 }
     );
   }
 
-  const { question } = await req.json();
-  if (!question || typeof question !== "string") {
-    return NextResponse.json({ error: "Missing question" }, { status: 400 });
+  const body = await req.json();
+  const clientMessages: ClientMessage[] = Array.isArray(body.messages) ? body.messages.slice(-MAX_HISTORY) : [];
+  const attachments: Attachment[] = Array.isArray(body.attachments) ? body.attachments.slice(0, MAX_ATTACHMENTS) : [];
+
+  if (clientMessages.length === 0 || clientMessages[clientMessages.length - 1].role !== "user") {
+    return NextResponse.json({ error: "Missing a user message" }, { status: 400 });
   }
 
-  const messages: { role: string; content: string | AnthropicContentBlock[] }[] = [
-    { role: "user", content: question.slice(0, 2000) },
-  ];
+  const messages: { role: string; content: string | AnthropicContentBlock[] }[] = clientMessages.map(
+    (m, i) => {
+      const isLast = i === clientMessages.length - 1;
+      if (!isLast || attachments.length === 0) {
+        return { role: m.role, content: m.text.slice(0, 4000) };
+      }
+      const blocks: AnthropicContentBlock[] = [];
+      for (const att of attachments) {
+        if (att.media_type.startsWith("image/")) {
+          blocks.push({ type: "image", source: { type: "base64", media_type: att.media_type, data: att.data } });
+        } else if (att.media_type === "application/pdf") {
+          blocks.push({ type: "document", source: { type: "base64", media_type: att.media_type, data: att.data } });
+        } else {
+          blocks.push({
+            type: "text",
+            text: `[Attached file: ${att.name}]\n\n${decodeBase64Text(att.data)}`,
+          });
+        }
+      }
+      blocks.push({ type: "text", text: m.text.slice(0, 4000) });
+      return { role: m.role, content: blocks };
+    }
+  );
 
-  for (let round = 0; round < 4; round++) {
+  for (let round = 0; round < 5; round++) {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -169,7 +214,7 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         model: "claude-sonnet-5",
-        max_tokens: 1024,
+        max_tokens: 1500,
         system: SYSTEM_PROMPT,
         tools: [...TOOLS, WEB_SEARCH_TOOL],
         messages,
@@ -177,8 +222,8 @@ export async function POST(req: NextRequest) {
     });
 
     if (!res.ok) {
-      const body = await res.text();
-      return NextResponse.json({ error: `Anthropic API error: ${res.status} ${body}` }, { status: 502 });
+      const errBody = await res.text();
+      return NextResponse.json({ error: `Anthropic API error: ${res.status} ${errBody}` }, { status: 502 });
     }
 
     const result = await res.json();
