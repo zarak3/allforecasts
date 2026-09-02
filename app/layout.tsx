@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Newsreader, IBM_Plex_Mono } from "next/font/google";
+import { Newsreader, IBM_Plex_Mono, Fraunces } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -18,6 +18,16 @@ const plexMono = IBM_Plex_Mono({
   display: "swap",
 });
 
+// Just for the wordmark -- a distinct classy serif from the body/heading
+// font, at a weight where "All" and "Forecasts" read as one clean, evenly
+// weighted mark rather than mono-bold "ll" dominating.
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  weight: ["600"],
+  variable: "--font-fraunces",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://allforecasts.com"),
   title: "AllForecasts — See what's coming, before it's official.",
@@ -33,7 +43,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${newsreader.variable} ${plexMono.variable}`}>
+    <html lang="en" className={`${newsreader.variable} ${plexMono.variable} ${fraunces.variable}`}>
       <body>
         <Header />
         {children}

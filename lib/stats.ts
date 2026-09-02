@@ -47,3 +47,32 @@ export function linearTrendForecast(points: { x: number; y: number }[]): number 
   const nextX = sorted[n - 1].x + 1;
   return slope * nextX + intercept;
 }
+
+interface YearSeries {
+  year: number;
+  value: number;
+}
+
+export interface LagCorrelationResult {
+  r: number | null;
+  n: number;
+  points: { year: number; a: number; b: number }[];
+}
+
+// Pairs indicator A at year t with indicator B at year (t + lag) for one
+// country's own history, then runs Pearson on the pairs -- the actual
+// lag-correlation screen, not the cross-sectional one-point-in-time version
+// on the main insights table.
+export function lagCorrelation(seriesA: YearSeries[], seriesB: YearSeries[], lag: number): LagCorrelationResult {
+  const bByYear = new Map(seriesB.map((p) => [p.year, p.value]));
+  const points: { year: number; a: number; b: number }[] = [];
+  for (const a of seriesA) {
+    const b = bByYear.get(a.year + lag);
+    if (b !== undefined) points.push({ year: a.year, a: a.value, b });
+  }
+  const r = pearson(
+    points.map((p) => p.a),
+    points.map((p) => p.b)
+  );
+  return { r, n: points.length, points };
+}

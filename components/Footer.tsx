@@ -8,16 +8,17 @@ export default function Footer() {
           attribution (World Bank, ONS, WHO, UNESCO). Do not make investment or financial
           decisions based on this content.
         </p>
-        <p>
-          hello@allforecasts.com ·{" "}
-          <a href="https://x.com/allforecast" className="text-ink-soft hover:text-accent">
-            @allforecast
-          </a>{" "}
-          ·{" "}
-          <a href="https://instagram.com/allforecast" className="text-ink-soft hover:text-accent">
-            Instagram
+        <div className="flex flex-wrap gap-x-6 gap-y-1">
+          <a href="mailto:hello@allforecasts.com" className="text-ink-soft hover:text-accent">
+            Email: hello@allforecasts.com
           </a>
-        </p>
+          <a href="https://x.com/allforecast" className="text-ink-soft hover:text-accent">
+            X: @allforecast
+          </a>
+          <a href="https://instagram.com/allforecast" className="text-ink-soft hover:text-accent">
+            Instagram: @allforecast
+          </a>
+        </div>
       </div>
     </footer>
   );

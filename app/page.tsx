@@ -28,10 +28,9 @@ export default function HomePage() {
             before it&apos;s official.
           </h1>
           <p className="text-lg text-ink-soft max-w-xl">
-            Real public data, screened for genuine links between them, turned into plain-language
-            forecasts — for a country, a city, a business, or a person. No guesswork dressed up as
-            insight: every number here is either pulled live from a public source or computed in
-            the open, with the reasoning shown, not hidden behind the call.
+            We track the data that actually matters — for a country, a city, a business, or a
+            person — and only publish a forecast once we can defend it. Every call is dated,
+            public, and checked against what actually happened.
           </p>
         </div>
       </section>
@@ -79,45 +78,6 @@ export default function HomePage() {
               rather than new weakness. No analyst consensus was published for this release yet;
               professional consensus historically misses by ~0.2pp either way.
             </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="section" id="method">
-        <div className="max-w-4xl mx-auto px-6">
-          <h2 className="section-title">Method</h2>
-          <div className="grid sm:grid-cols-2 gap-8">
-            <div>
-              <h3 className="text-lg mb-2">Correlation isn&apos;t the method</h3>
-              <p className="text-ink-soft text-[15px]">
-                Relationships are screened with Granger causality and lag-correlation analysis,
-                then checked out-of-sample — not fit to historical curves after the fact.
-              </p>
-            </div>
-            <div>
-              <h3 className="text-lg mb-2">Honest about the ceiling</h3>
-              <p className="text-ink-soft text-[15px]">
-                Full prediction of &quot;the fate of an economy&quot; isn&apos;t realistic —
-                reflexivity, the Lucas critique, structural breaks and black swans set hard
-                limits. The goal is short-horizon, probabilistic, direction-and-timing forecasts.
-              </p>
-            </div>
-            <div>
-              <h3 className="text-lg mb-2">A fixed set of cross-checks</h3>
-              <p className="text-ink-soft text-[15px]">
-                Good forecasts weigh a handful of independent indicators against each other.
-                Indicators are capped, not endlessly added — past that point you&apos;re fitting a
-                narrative, not improving accuracy.
-              </p>
-            </div>
-            <div>
-              <h3 className="text-lg mb-2">Stats compute, AI explains</h3>
-              <p className="text-ink-soft text-[15px]">
-                Statistics and ML do the actual forecasting. The language layer narrates and
-                contextualises validated output — it never invents a number or makes the call
-                itself.
-              </p>
-            </div>
           </div>
         </div>
       </section>

@@ -19,11 +19,14 @@ export const COMMODITIES: Instrument[] = [
   { symbol: "NG=F", label: "Natural Gas", kind: "commodity" },
 ];
 
-// Frankfurter's own supported set (ECB reference rates) -- a real, if not
-// literally exhaustive, list of major world currencies.
+// Every currency Frankfurter (ECB reference rates) supports, quoted
+// against USD -- this is a real, complete list from their own /currencies
+// endpoint, not a hand-picked subset. ECB doesn't publish a rate for every
+// world currency (no PKR, no NGN, etc.) -- this is the genuine ceiling of
+// this free source, not an arbitrary cut-down.
 export const CURRENCIES: Instrument[] = [
-  { symbol: "GBP", label: "British Pound", kind: "currency" },
   { symbol: "EUR", label: "Euro", kind: "currency" },
+  { symbol: "GBP", label: "British Pound", kind: "currency" },
   { symbol: "JPY", label: "Japanese Yen", kind: "currency" },
   { symbol: "CNY", label: "Chinese Yuan", kind: "currency" },
   { symbol: "INR", label: "Indian Rupee", kind: "currency" },
@@ -36,6 +39,21 @@ export const CURRENCIES: Instrument[] = [
   { symbol: "SGD", label: "Singapore Dollar", kind: "currency" },
   { symbol: "TRY", label: "Turkish Lira", kind: "currency" },
   { symbol: "KRW", label: "South Korean Won", kind: "currency" },
+  { symbol: "HKD", label: "Hong Kong Dollar", kind: "currency" },
+  { symbol: "NZD", label: "New Zealand Dollar", kind: "currency" },
+  { symbol: "SEK", label: "Swedish Krona", kind: "currency" },
+  { symbol: "NOK", label: "Norwegian Krone", kind: "currency" },
+  { symbol: "DKK", label: "Danish Krone", kind: "currency" },
+  { symbol: "PLN", label: "Polish Złoty", kind: "currency" },
+  { symbol: "CZK", label: "Czech Koruna", kind: "currency" },
+  { symbol: "HUF", label: "Hungarian Forint", kind: "currency" },
+  { symbol: "RON", label: "Romanian Leu", kind: "currency" },
+  { symbol: "ILS", label: "Israeli New Shekel", kind: "currency" },
+  { symbol: "THB", label: "Thai Baht", kind: "currency" },
+  { symbol: "MYR", label: "Malaysian Ringgit", kind: "currency" },
+  { symbol: "IDR", label: "Indonesian Rupiah", kind: "currency" },
+  { symbol: "PHP", label: "Philippine Peso", kind: "currency" },
+  { symbol: "ISK", label: "Icelandic Króna", kind: "currency" },
 ];
 
 export interface PricePoint {

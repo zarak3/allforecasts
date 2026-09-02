@@ -18,26 +18,45 @@ export default function MarketsExplorer() {
   const [series, setSeries] = useState<MarketSeries | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [fetchedAt, setFetchedAt] = useState<Date | null>(null);
+  const [secondsAgo, setSecondsAgo] = useState(0);
 
   const instruments = kind === "commodity" ? COMMODITIES : CURRENCIES;
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setError(null);
-    fetch(`/api/markets?symbol=${encodeURIComponent(symbol)}&range=${range}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (cancelled) return;
-        if (data.error) setError(data.error);
-        else setSeries(data.data);
-      })
-      .catch(() => !cancelled && setError("Network error — try again."))
-      .finally(() => !cancelled && setLoading(false));
+    function load(showLoading: boolean) {
+      if (showLoading) setLoading(true);
+      setError(null);
+      fetch(`/api/markets?symbol=${encodeURIComponent(symbol)}&range=${range}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (cancelled) return;
+          if (data.error) setError(data.error);
+          else {
+            setSeries(data.data);
+            setFetchedAt(new Date());
+          }
+        })
+        .catch(() => !cancelled && setError("Network error — try again."))
+        .finally(() => !cancelled && setLoading(false));
+    }
+    load(true);
+    // Prices update server-side on their own cadence (commodities intraday,
+    // currencies once daily) -- polling just picks up whatever's fresh
+    // without the visitor needing to reload the page.
+    const interval = setInterval(() => load(false), 60_000);
     return () => {
       cancelled = true;
+      clearInterval(interval);
     };
   }, [symbol, range]);
+
+  useEffect(() => {
+    if (!fetchedAt) return;
+    const tick = setInterval(() => setSecondsAgo(Math.round((Date.now() - fetchedAt.getTime()) / 1000)), 1000);
+    return () => clearInterval(tick);
+  }, [fetchedAt]);
 
   return (
     <div>
@@ -95,7 +114,7 @@ export default function MarketsExplorer() {
           <p className="font-mono text-sm text-warn py-10 text-center">{error}</p>
         ) : series ? (
           <>
-            <div className="flex items-baseline justify-between flex-wrap gap-2 mb-4">
+            <div className="flex items-baseline justify-between flex-wrap gap-2 mb-1">
               <div>
                 <div className="font-mono text-sm text-ink-soft">{series.label}</div>
                 <div className="font-mono text-2xl font-medium text-accent">
@@ -113,6 +132,13 @@ export default function MarketsExplorer() {
                   {series.changePercent.toFixed(2)}% over period
                 </span>
               )}
+            </div>
+            <div className="font-mono text-[11px] text-ink-soft flex items-center gap-1.5 mb-4">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-good opacity-75" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-good" />
+              </span>
+              live · updated {secondsAgo < 5 ? "just now" : `${secondsAgo}s ago`}
             </div>
             <InteractiveChart points={series.points} unit={series.unit} />
           </>

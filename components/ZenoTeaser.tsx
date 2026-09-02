@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import ZenoLogo from "@/components/ZenoLogo";
 
 const DISMISSED_KEY = "zeno-teaser-dismissed";
 
@@ -40,8 +41,11 @@ export default function ZenoTeaser() {
       >
         ✕
       </button>
-      <p className="text-sm text-ink mb-3 pr-3">
-        👋 I&apos;m <b>Zeno</b>. Ask me about any country&apos;s data, or a live prediction.
+      <p className="text-sm text-ink mb-3 pr-3 flex items-start gap-2">
+        <ZenoLogo size={18} className="text-accent shrink-0 mt-0.5" />
+        <span>
+          I&apos;m <b>Zeno</b>. Ask me about any country&apos;s data, or a live prediction.
+        </span>
       </p>
       <Link
         href="/zeno"

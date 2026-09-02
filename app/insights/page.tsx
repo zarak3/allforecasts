@@ -1,6 +1,9 @@
 import { supabaseServer, fetchAllRows } from "@/lib/supabase";
 import { pearson } from "@/lib/stats";
 import { interpretPair } from "@/lib/insight-meaning";
+import { displayCountryName } from "@/lib/display-name";
+import LagCorrelationTool from "@/components/LagCorrelationTool";
+import type { Entity } from "@/lib/types";
 
 export const revalidate = 3600;
 export const metadata = { title: "Insights — AllForecasts" };
@@ -21,19 +24,22 @@ interface PairResult {
   n: number;
 }
 
-async function computeCorrelations(): Promise<{ pairs: PairResult[]; loadError: string | null }> {
+async function computeCorrelations(): Promise<{ pairs: PairResult[]; entities: Entity[]; loadError: string | null }> {
   try {
     const supabase = supabaseServer();
     // PostgREST caps every response at ~1000 rows server-side no matter what
     // range is requested -- with 18 indicators x 217 countries that silently
     // truncated to ~6 indicators worth of data. fetchAllRows pages past it.
-    const rows = await fetchAllRows<IndicatorRow>((from, to) =>
-      supabase
-        .from("indicators")
-        .select("entity_id, name, category, value, entity:entities!inner(type)")
-        .eq("entity.type", "country")
-        .range(from, to) as unknown as PromiseLike<{ data: IndicatorRow[] | null; error: { message: string } | null }>
-    );
+    const [rows, entitiesRes] = await Promise.all([
+      fetchAllRows<IndicatorRow>((from, to) =>
+        supabase
+          .from("indicators")
+          .select("entity_id, name, category, value, entity:entities!inner(type)")
+          .eq("entity.type", "country")
+          .range(from, to) as unknown as PromiseLike<{ data: IndicatorRow[] | null; error: { message: string } | null }>
+      ),
+      supabase.from("entities").select("id, type, name, code").eq("type", "country").order("name").range(0, 9999),
+    ]);
 
     // name -> entity_id -> value (most recent World Bank pull is one row
     // per entity per indicator, so this is a clean 1:1 map)
@@ -77,9 +83,9 @@ async function computeCorrelations(): Promise<{ pairs: PairResult[]; loadError: 
     }
 
     pairs.sort((p, q) => Math.abs(q.r) - Math.abs(p.r));
-    return { pairs, loadError: null };
+    return { pairs, entities: (entitiesRes.data as Entity[]) ?? [], loadError: null };
   } catch (err) {
-    return { pairs: [], loadError: err instanceof Error ? err.message : String(err) };
+    return { pairs: [], entities: [], loadError: err instanceof Error ? err.message : String(err) };
   }
 }
 
@@ -102,9 +108,13 @@ function RBar({ r }: { r: number }) {
 }
 
 export default async function InsightsPage() {
-  const { pairs, loadError } = await computeCorrelations();
+  const { pairs, entities, loadError } = await computeCorrelations();
   const crossCategory = pairs.filter((p) => p.categoryA !== p.categoryB);
   const top = crossCategory.slice(0, 12);
+  const entityOptions = entities
+    .filter((e) => e.code)
+    .map((e) => ({ code: e.code as string, name: displayCountryName(e.code, e.name) }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <main className="section pt-16">
@@ -112,33 +122,12 @@ export default async function InsightsPage() {
         <div className="eyebrow mb-3">Screening</div>
         <h1 className="text-3xl font-medium mb-3">Insights</h1>
         <p className="text-ink-soft max-w-2xl mb-4">
-          What actually moves together, across 217 countries — the real first pass at the
-          &quot;hidden relationship&quot; engine from the{" "}
-          <a href="/#method" className="underline">
-            method
-          </a>
-          . Built for the same four users the whole site is: a government sizing up policy
-          trade-offs, a business scouting a market, a city planner, or a person deciding where to
-          move — a starting point for what&apos;s worth digging into, not a finished answer.
+          What actually moves together, across 217 countries. Built for a government sizing up
+          policy trade-offs, a business scouting a market, a city planner, or a person deciding
+          where to move — a starting point for what&apos;s worth digging into, not a finished
+          answer. All of it real, computed from public data, and shown as-is — nothing here is
+          smoothed over to make a stronger story than the numbers support.
         </p>
-        <div className="card p-5 mb-10 text-sm text-ink-soft">
-          <p className="mb-2">
-            <b className="text-ink">What this is:</b> a cross-sectional screen — do two indicators
-            move together across countries right now. A hypothesis-generation step, not a forecast.
-          </p>
-          <p className="mb-2">
-            <b className="text-ink">What this isn&apos;t (yet):</b> not the lag-correlation /
-            Granger causality method the site&apos;s actual predictions use — that needs historical
-            time series per country, the next slice of this engine. Some pairs are correlated by
-            definition (GDP and GNI per capita measure almost the same thing), not by discovery.
-          </p>
-          <p>
-            <b className="text-ink">What&apos;s still missing:</b> the &quot;unusual&quot;
-            alternative data (satellite night-lights, shipping traffic, arms trade, conflict data)
-            from the original vision needs paid/complex API access this build doesn&apos;t have
-            yet. Everything below is public World Bank data, plus one AllForecasts trend projection.
-          </p>
-        </div>
 
         {loadError ? (
           <p className="font-mono text-sm text-warn">
@@ -146,8 +135,8 @@ export default async function InsightsPage() {
           </p>
         ) : (
           <>
-            <h2 className="section-title">Strongest cross-category relationships</h2>
-            <div className="flex flex-col gap-4 mb-8">
+            <h2 className="section-title">Strongest relationships right now</h2>
+            <div className="flex flex-col gap-4 mb-10">
               {top.map((p) => {
                 const { meaning, personas } = interpretPair(p.a, p.categoryA, p.b, p.categoryB, p.r);
                 return (
@@ -178,12 +167,21 @@ export default async function InsightsPage() {
                 );
               })}
             </div>
-
-            <p className="font-mono text-xs text-ink-soft">
+            <p className="font-mono text-xs text-ink-soft mb-14">
               {pairs.length} pairs screened in total ({crossCategory.length} cross-category). r ranges
               from -1 (perfectly opposite) to +1 (perfectly together); anything under ~0.3 in either
-              direction is weak.
+              direction is weak. Some pairs are related by definition (GDP and GNI per capita
+              measure almost the same thing) rather than by real discovery — read the number, not
+              just the ranking.
             </p>
+
+            <h2 className="section-title">Run your own comparison</h2>
+            <p className="text-ink-soft max-w-2xl mb-5 text-sm">
+              The table above compares every country at a single moment. This checks one
+              country&apos;s own history over time instead — does a change in one indicator show
+              up in another a few years later.
+            </p>
+            <LagCorrelationTool entities={entityOptions} />
           </>
         )}
       </div>

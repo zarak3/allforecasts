@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { COMMODITIES, CURRENCIES, fetchCommodity, fetchCurrency } from "@/lib/markets";
 
-export const revalidate = 1800; // 30 min -- these are real live-ish prices, don't hammer the upstream APIs
+export const revalidate = 300; // 5 min -- real prices, refreshed often without hammering the upstream APIs
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     const series = commodity ? await fetchCommodity(symbol, range) : await fetchCurrency(symbol, range);
     return NextResponse.json(
       { data: series },
-      { headers: { "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=3600" } }
+      { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" } }
     );
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 502 });

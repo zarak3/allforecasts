@@ -17,6 +17,7 @@ const config: Config = {
       fontFamily: {
         serif: ["var(--font-newsreader)", "Georgia", "serif"],
         mono: ["var(--font-plex-mono)", "ui-monospace", "monospace"],
+        wordmark: ["var(--font-fraunces)", "Georgia", "serif"],
       },
     },
   },
