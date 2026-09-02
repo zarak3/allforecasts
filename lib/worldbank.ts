@@ -15,6 +15,13 @@ export const WORLD_BANK_INDICATORS: Record<
   "SH.XPD.CHEX.GD.ZS": { label: "Health expenditure", category: "health", unit: "% of GDP" },
   "SE.ADT.LITR.ZS": { label: "Adult literacy rate", category: "education", unit: "%" },
   "SP.POP.TOTL": { label: "Population", category: "demographic", unit: "people" },
+  "GC.DOD.TOTL.GD.ZS": { label: "Government debt", category: "economic", unit: "% of GDP" },
+  "NY.GDP.PETR.RT.ZS": { label: "Oil rents", category: "economic", unit: "% of GDP" },
+  "NY.GDP.TOTL.RT.ZS": { label: "Total natural resources rents", category: "economic", unit: "% of GDP" },
+  "SL.EMP.TOTL.SP.ZS": { label: "Employment-to-population ratio", category: "economic", unit: "%" },
+  "NY.GNP.PCAP.CD": { label: "GNI per capita (Atlas method)", category: "economic", unit: "USD" },
+  "SP.DYN.IMRT.IN": { label: "Infant mortality rate", category: "health", unit: "per 1,000 live births" },
+  "SH.MED.PHYS.ZS": { label: "Physicians", category: "health", unit: "per 1,000 people" },
 };
 
 export interface WorldBankCountry {
