@@ -61,8 +61,9 @@ export default function AskWidget() {
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3">
             {messages.length === 0 && (
               <p className="text-sm text-ink-soft">
-                Ask about a country&apos;s data, a live prediction, or which indicators correlate.
-                Answers are grounded in the site&apos;s real data — nothing is invented.
+                Ask about a country&apos;s data, a live prediction, which indicators correlate, or
+                anything else — it can search the web too. Site numbers are always pulled live,
+                nothing is invented.
               </p>
             )}
             {messages.map((m, i) => (

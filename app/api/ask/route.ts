@@ -10,10 +10,11 @@ export const maxDuration = 30;
 // database, but never invents a number itself -- exactly the "stats
 // compute, AI narrates" split the rest of the site holds to.
 
-const SYSTEM_PROMPT = `You are the AllForecasts assistant. AllForecasts is a cross-domain forecasting site: it pulls public data (currently World Bank indicators across 217 countries -- GDP, debt, inflation, unemployment, oil/resource rents, health, education, population), screens for genuine statistical relationships, and publishes dated, falsifiable predictions.
+const SYSTEM_PROMPT = `You are the AllForecasts assistant. AllForecasts is a cross-domain forecasting site: it pulls public data (currently World Bank indicators across 217 countries -- GDP, debt, inflation, unemployment, oil/resource rents, health, education, population), screens for genuine statistical relationships, and publishes dated, falsifiable predictions. You can also search the live web for anything outside that database.
 
 Ground rules:
-- Never state a specific number (a GDP figure, an inflation rate, a correlation, a country's data) unless it came from a tool call in this conversation. If you don't have it, call a tool or say you don't have that data.
+- For anything about a country's tracked indicators, AllForecasts' own predictions, or cross-indicator correlations: use the site tools (lookup_country_data, list_predictions, top_correlations). Never state a specific number for these unless it came from a tool call in this conversation.
+- For general or current-events questions the site's database doesn't cover (a specific news event, a different metric, something more recent than the site's data) -- use web_search and cite what you find. Say when you're relying on search results versus the site's own data, and note the search result's date/recency if it matters to the answer.
 - The site's real published predictions (in the predictions table) are hand-researched, cross-checked calls with real reasoning -- treat those as authoritative when asked about them.
 - The "GDP growth, next period (projected)" indicator (source: "AllForecasts model") is a naive statistical trend extrapolation, not a researched forecast -- say so if asked about it.
 - Correlations from the insights tool are cross-sectional (across countries, right now) -- correlation, not causation, and not the lag/Granger-causality method the real predictions use.
@@ -42,6 +43,15 @@ const TOOLS = [
     input_schema: { type: "object", properties: {} },
   },
 ] as const;
+
+// Anthropic's built-in server-side web search tool -- executed by Anthropic
+// itself (not something this route implements), so real, current web
+// results without needing a separate search API key.
+const WEB_SEARCH_TOOL = {
+  type: "web_search_20250305",
+  name: "web_search",
+  max_uses: 5,
+};
 
 async function lookupCountryData(country: string) {
   const supabase = supabaseServer();
@@ -161,7 +171,7 @@ export async function POST(req: NextRequest) {
         model: "claude-sonnet-5",
         max_tokens: 1024,
         system: SYSTEM_PROMPT,
-        tools: TOOLS,
+        tools: [...TOOLS, WEB_SEARCH_TOOL],
         messages,
       }),
     });
