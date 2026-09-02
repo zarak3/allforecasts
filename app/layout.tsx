@@ -41,10 +41,31 @@ export const metadata: Metadata = {
   },
 };
 
+const JSON_LD = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://allforecasts.com/#organization",
+      name: "AllForecasts",
+      url: "https://allforecasts.com",
+      logo: "https://allforecasts.com/icon",
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://allforecasts.com/#website",
+      name: "AllForecasts",
+      url: "https://allforecasts.com",
+      publisher: { "@id": "https://allforecasts.com/#organization" },
+    },
+  ],
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${newsreader.variable} ${plexMono.variable} ${fraunces.variable}`}>
       <body>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }} />
         <Header />
         {children}
         <Footer />
