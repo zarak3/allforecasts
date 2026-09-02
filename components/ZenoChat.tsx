@@ -95,13 +95,7 @@ export default function ZenoChat({ compact = false }: { compact?: boolean }) {
       }`}
     >
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
-        {messages.length === 0 && (
-          <p className="text-sm text-ink-soft">
-            Ask about a country&apos;s data, a live prediction, which indicators correlate, attach a
-            file to discuss, or ask anything else — Zeno can search the web too. Site numbers are
-            always pulled live, nothing is invented.
-          </p>
-        )}
+        {messages.length === 0 && <p className="text-sm text-ink-soft">How can I help?</p>}
         {messages.map((m, i) => (
           <div
             key={i}
