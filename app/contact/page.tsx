@@ -59,7 +59,7 @@ export default function ContactPage() {
               className="card p-6 flex items-center justify-between no-underline hover:opacity-80 transition"
             >
               <span className="font-mono text-xs uppercase tracking-wide text-ink-soft inline-flex items-center gap-2">
-                <link.Icon size={15} />
+                <link.Icon size={18} />
                 {link.label}
               </span>
               <span className="font-mono text-lg text-ink">{link.value}</span>

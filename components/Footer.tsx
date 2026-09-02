@@ -15,21 +15,21 @@ export default function Footer() {
             href="mailto:hello@allforecasts.com"
             className="text-ink-soft hover:text-accent inline-flex items-center gap-1.5"
           >
-            <EmailIcon size={14} />
+            <EmailIcon size={16} />
             hello@allforecasts.com
           </a>
           <a
             href="https://x.com/allforecast"
             className="text-ink-soft hover:text-accent inline-flex items-center gap-1.5"
           >
-            <XIcon size={14} />
+            <XIcon size={13} />
             @allforecast
           </a>
           <a
             href="https://instagram.com/allforecast"
             className="text-ink-soft hover:text-accent inline-flex items-center gap-1.5"
           >
-            <InstagramIcon size={14} />
+            <InstagramIcon size={17} />
             @allforecast
           </a>
         </div>

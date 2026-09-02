@@ -3,6 +3,7 @@ import { pearson } from "@/lib/stats";
 import { interpretPair } from "@/lib/insight-meaning";
 import { displayCountryName } from "@/lib/display-name";
 import LagCorrelationTool from "@/components/LagCorrelationTool";
+import ProjectionTool from "@/components/ProjectionTool";
 import PatternBrowser, { type PatternPair } from "@/components/PatternBrowser";
 import type { Entity } from "@/lib/types";
 
@@ -117,7 +118,11 @@ export default async function CorrelationsPage() {
           <p className="font-mono text-sm text-warn">Could not reach the database ({loadError}).</p>
         ) : (
           <>
+            <h2 className="section-title mb-4">Compare two indicators over time</h2>
             <LagCorrelationTool entities={entityOptions} />
+
+            <h2 className="section-title mt-10 mb-4">Project one indicator forward</h2>
+            <ProjectionTool entities={entityOptions} />
 
             <div className="mt-8">
               <PatternBrowser pairs={top} totalPairs={pairs.length} crossCategoryCount={crossCategory.length} />
