@@ -96,8 +96,8 @@ export default async function InsightsPage() {
           <a href="/#method" className="underline">
             method
           </a>
-          : Pearson correlation, computed across all 217 countries&apos; latest World Bank readings, for
-          every pair of the 16 indicators currently tracked.
+          : Pearson correlation, computed across all 217 countries&apos; latest readings, for every
+          pair of the indicators currently tracked.
         </p>
         <div className="card p-5 mb-10 text-sm text-ink-soft">
           <p className="mb-2">
@@ -115,7 +115,7 @@ export default async function InsightsPage() {
             <b className="text-ink">What&apos;s still missing:</b> the &quot;unusual&quot; alternative
             data (satellite night-lights, shipping traffic, search trends) described in the original
             vision needs paid/complex API access this build doesn&apos;t have yet. Everything below is
-            public World Bank data.
+            public World Bank data, plus one AllForecasts-computed trend projection.
           </p>
         </div>
 
