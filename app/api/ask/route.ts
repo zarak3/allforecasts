@@ -7,26 +7,29 @@ export const maxDuration = 60;
 
 // Zeno: the "natural language interface" from the project's own vision --
 // an agentic loop where the model can call real tools against the live
-// database, search the web, and read attached files, but never invents a
-// site number itself -- exactly the "stats compute, AI narrates" split the
-// rest of the site holds to.
+// database and read attached files, but never invents a site number
+// itself -- exactly the "stats compute, AI narrates" split the rest of the
+// site holds to. Runs on Gemini's free tier (gemini-3.8-flash) rather than
+// a paid API -- no live web search here, since Gemini's Google Search
+// grounding tool is billed per query even on free-tier models, and this
+// has to stay genuinely free.
 
-const SYSTEM_PROMPT = `You are Zeno, the AllForecasts assistant. AllForecasts is a cross-domain forecasting site: it pulls public data (currently World Bank indicators across 217 countries -- GDP, debt, inflation, unemployment, oil/resource rents, health, education, population), screens for genuine statistical relationships, and publishes dated, falsifiable predictions. You can search the live web, and read files a user attaches.
+const SYSTEM_PROMPT = `You are Zeno, the AllForecasts assistant. AllForecasts is a cross-domain forecasting site: it pulls public data (currently World Bank indicators across 217 countries -- GDP, debt, inflation, unemployment, oil/resource rents, health, education, population), screens for genuine statistical relationships, and publishes dated, falsifiable predictions. You can read files a user attaches.
 
 Ground rules:
 - For anything about a country's tracked indicators, AllForecasts' own predictions, or cross-indicator correlations: use the site tools (lookup_country_data, list_predictions, top_correlations). Never state a specific number for these unless it came from a tool call in this conversation.
-- For general or current-events questions the site's database doesn't cover -- use web_search and cite what you find. Say when you're relying on search results versus the site's own data, and note recency if it matters.
+- You do not have live web search. For current-events questions the site's database doesn't cover, say so plainly rather than guessing -- don't invent a number or a recent event.
 - If the user attached a file, its contents appear inline in their message -- read and use it directly.
 - The site's real published predictions are hand-researched, cross-checked calls with real reasoning -- treat those as authoritative when asked about them.
 - The "GDP growth, next period (projected)" indicator (source: "AllForecasts model") is a naive statistical trend extrapolation, not a researched forecast -- say so if asked.
 - Correlations from the top_correlations tool are cross-sectional (across countries, right now) -- correlation, not causation, and not the lag/Granger-causality method the real predictions use.
 - Keep answers short, plain-language, and warm but professional. This is a public-facing assistant, not a terminal.`;
 
-const TOOLS = [
+const FUNCTION_DECLARATIONS = [
   {
     name: "lookup_country_data",
     description: "Get all tracked indicators (GDP, debt, inflation, health, etc.) for one country.",
-    input_schema: {
+    parameters: {
       type: "object",
       properties: {
         country: { type: "string", description: "Country name or ISO2 code, e.g. 'Pakistan' or 'PK'" },
@@ -37,23 +40,14 @@ const TOOLS = [
   {
     name: "list_predictions",
     description: "List AllForecasts' real published/pending predictions with their reasoning and resolution dates.",
-    input_schema: { type: "object", properties: {} },
+    parameters: { type: "object", properties: {} },
   },
   {
     name: "top_correlations",
     description: "Get the strongest real cross-sectional correlations between indicators, computed across all 217 countries.",
-    input_schema: { type: "object", properties: {} },
+    parameters: { type: "object", properties: {} },
   },
 ] as const;
-
-// Anthropic's built-in server-side web search tool -- executed by Anthropic
-// itself (not something this route implements), so real, current web
-// results without needing a separate search API key.
-const WEB_SEARCH_TOOL = {
-  type: "web_search_20250305",
-  name: "web_search",
-  max_uses: 5,
-};
 
 async function lookupCountryData(country: string) {
   const supabase = supabaseServer();
@@ -133,15 +127,16 @@ async function runTool(name: string, input: Record<string, unknown>) {
   }
 }
 
-interface AnthropicContentBlock {
-  type: string;
+interface GeminiPart {
   text?: string;
-  id?: string;
-  name?: string;
-  input?: Record<string, unknown>;
-  tool_use_id?: string;
-  content?: string | Record<string, unknown>[];
-  source?: { type: "base64"; media_type: string; data: string };
+  inline_data?: { mime_type: string; data: string };
+  functionCall?: { name: string; args?: Record<string, unknown> };
+  functionResponse?: { name: string; response: Record<string, unknown> };
+}
+
+interface GeminiContent {
+  role: "user" | "model" | "function";
+  parts: GeminiPart[];
 }
 
 interface ClientMessage {
@@ -158,16 +153,17 @@ interface Attachment {
 const MAX_HISTORY = 20;
 const MAX_ATTACHMENTS = 3;
 const MAX_INLINE_TEXT_CHARS = 12000;
+const SUPPORTED_INLINE_TYPES = new Set(["image/png", "image/jpeg", "image/webp", "image/heic", "image/heif", "application/pdf"]);
 
 function decodeBase64Text(data: string): string {
   return Buffer.from(data, "base64").toString("utf-8").slice(0, MAX_INLINE_TEXT_CHARS);
 }
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
-      { error: "Zeno isn't switched on yet -- the site is still waiting on an Anthropic API key." },
+      { error: "Zeno isn't switched on yet -- the site is still waiting on a Gemini API key." },
       { status: 503 }
     );
   }
@@ -180,75 +176,63 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing a user message" }, { status: 400 });
   }
 
-  const messages: { role: string; content: string | AnthropicContentBlock[] }[] = clientMessages.map(
-    (m, i) => {
-      const isLast = i === clientMessages.length - 1;
-      if (!isLast || attachments.length === 0) {
-        return { role: m.role, content: m.text.slice(0, 4000) };
-      }
-      const blocks: AnthropicContentBlock[] = [];
-      for (const att of attachments) {
-        if (att.media_type.startsWith("image/")) {
-          blocks.push({ type: "image", source: { type: "base64", media_type: att.media_type, data: att.data } });
-        } else if (att.media_type === "application/pdf") {
-          blocks.push({ type: "document", source: { type: "base64", media_type: att.media_type, data: att.data } });
-        } else {
-          blocks.push({
-            type: "text",
-            text: `[Attached file: ${att.name}]\n\n${decodeBase64Text(att.data)}`,
-          });
-        }
-      }
-      blocks.push({ type: "text", text: m.text.slice(0, 4000) });
-      return { role: m.role, content: blocks };
+  const contents: GeminiContent[] = clientMessages.map((m, i) => {
+    const isLast = i === clientMessages.length - 1;
+    const role = m.role === "assistant" ? "model" : "user";
+    if (!isLast || attachments.length === 0) {
+      return { role, parts: [{ text: m.text.slice(0, 4000) }] };
     }
-  );
+    const parts: GeminiPart[] = [];
+    for (const att of attachments) {
+      if (SUPPORTED_INLINE_TYPES.has(att.media_type)) {
+        parts.push({ inline_data: { mime_type: att.media_type, data: att.data } });
+      } else {
+        parts.push({ text: `[Attached file: ${att.name}]\n\n${decodeBase64Text(att.data)}` });
+      }
+    }
+    parts.push({ text: m.text.slice(0, 4000) });
+    return { role, parts };
+  });
 
   for (let round = 0; round < 5; round++) {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-5",
-        max_tokens: 1500,
-        system: SYSTEM_PROMPT,
-        tools: [...TOOLS, WEB_SEARCH_TOOL],
-        messages,
-      }),
-    });
+    const res = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          tools: [{ function_declarations: FUNCTION_DECLARATIONS }],
+          contents,
+        }),
+      }
+    );
 
     if (!res.ok) {
       const errBody = await res.text();
-      return NextResponse.json({ error: `Anthropic API error: ${res.status} ${errBody}` }, { status: 502 });
+      return NextResponse.json({ error: `Gemini API error: ${res.status} ${errBody}` }, { status: 502 });
     }
 
     const result = await res.json();
-    const content: AnthropicContentBlock[] = result.content ?? [];
-    messages.push({ role: "assistant", content });
+    const candidate = result.candidates?.[0];
+    const parts: GeminiPart[] = candidate?.content?.parts ?? [];
+    contents.push({ role: "model", parts });
 
-    const toolUses = content.filter((b) => b.type === "tool_use");
-    if (toolUses.length === 0) {
-      const text = content
-        .filter((b) => b.type === "text")
-        .map((b) => b.text)
+    const functionCalls = parts.filter((p) => p.functionCall);
+    if (functionCalls.length === 0) {
+      const text = parts
+        .filter((p) => p.text)
+        .map((p) => p.text)
         .join("\n");
-      return NextResponse.json({ answer: text });
+      return NextResponse.json({ answer: text || "Zeno didn't return a text answer -- try rephrasing." });
     }
 
-    const toolResults: AnthropicContentBlock[] = [];
-    for (const use of toolUses) {
-      const output = await runTool(use.name!, use.input ?? {});
-      toolResults.push({
-        type: "tool_result",
-        tool_use_id: use.id,
-        content: JSON.stringify(output),
-      });
+    const responseParts: GeminiPart[] = [];
+    for (const call of functionCalls) {
+      const output = await runTool(call.functionCall!.name, call.functionCall!.args ?? {});
+      responseParts.push({ functionResponse: { name: call.functionCall!.name, response: output as Record<string, unknown> } });
     }
-    messages.push({ role: "user", content: toolResults });
+    contents.push({ role: "function", parts: responseParts });
   }
 
   return NextResponse.json({ error: "Ran out of tool-call rounds without a final answer." }, { status: 500 });
