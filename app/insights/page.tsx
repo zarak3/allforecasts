@@ -1,5 +1,6 @@
 import { supabaseServer, fetchAllRows } from "@/lib/supabase";
 import { pearson } from "@/lib/stats";
+import { interpretPair } from "@/lib/insight-meaning";
 
 export const revalidate = 3600;
 export const metadata = { title: "Insights — AllForecasts" };
@@ -24,7 +25,7 @@ async function computeCorrelations(): Promise<{ pairs: PairResult[]; loadError: 
   try {
     const supabase = supabaseServer();
     // PostgREST caps every response at ~1000 rows server-side no matter what
-    // range is requested -- with 16 indicators x 217 countries that silently
+    // range is requested -- with 18 indicators x 217 countries that silently
     // truncated to ~6 indicators worth of data. fetchAllRows pages past it.
     const rows = await fetchAllRows<IndicatorRow>((from, to) =>
       supabase
@@ -82,9 +83,28 @@ async function computeCorrelations(): Promise<{ pairs: PairResult[]; loadError: 
   }
 }
 
+function RBar({ r }: { r: number }) {
+  const pct = Math.round(Math.abs(r) * 100);
+  return (
+    <div className="flex items-center gap-2 w-full max-w-[160px]">
+      <div className="flex-1 h-1.5 bg-line rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full ${r > 0 ? "bg-good" : "bg-warn"}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <span className={`font-mono text-xs shrink-0 ${r > 0 ? "text-good" : "text-warn"}`}>
+        {r > 0 ? "+" : ""}
+        {r.toFixed(2)}
+      </span>
+    </div>
+  );
+}
+
 export default async function InsightsPage() {
   const { pairs, loadError } = await computeCorrelations();
   const crossCategory = pairs.filter((p) => p.categoryA !== p.categoryB);
+  const top = crossCategory.slice(0, 12);
 
   return (
     <main className="section pt-16">
@@ -92,30 +112,31 @@ export default async function InsightsPage() {
         <div className="eyebrow mb-3">Screening</div>
         <h1 className="text-3xl font-medium mb-3">Insights</h1>
         <p className="text-ink-soft max-w-2xl mb-4">
-          A real first pass at the &quot;hidden relationship&quot; engine described in the{" "}
+          What actually moves together, across 217 countries — the real first pass at the
+          &quot;hidden relationship&quot; engine from the{" "}
           <a href="/#method" className="underline">
             method
           </a>
-          : Pearson correlation, computed across all 217 countries&apos; latest readings, for every
-          pair of the indicators currently tracked.
+          . Built for the same four users the whole site is: a government sizing up policy
+          trade-offs, a business scouting a market, a city planner, or a person deciding where to
+          move — a starting point for what&apos;s worth digging into, not a finished answer.
         </p>
         <div className="card p-5 mb-10 text-sm text-ink-soft">
           <p className="mb-2">
-            <b className="text-ink">What this is:</b> a cross-sectional screen — do two indicators move
-            together across countries right now. It is a hypothesis-generation step, not a forecast.
+            <b className="text-ink">What this is:</b> a cross-sectional screen — do two indicators
+            move together across countries right now. A hypothesis-generation step, not a forecast.
           </p>
           <p className="mb-2">
-            <b className="text-ink">What this isn&apos;t (yet):</b> this is not the lag-correlation /
+            <b className="text-ink">What this isn&apos;t (yet):</b> not the lag-correlation /
             Granger causality method the site&apos;s actual predictions use — that needs historical
-            time series per country, which is the next slice of this engine. Some pairs below are
-            correlated by definition (GDP per capita and GNI per capita measure almost the same thing)
-            rather than by genuine discovery — read the numbers, not just the ranking.
+            time series per country, the next slice of this engine. Some pairs are correlated by
+            definition (GDP and GNI per capita measure almost the same thing), not by discovery.
           </p>
           <p>
-            <b className="text-ink">What&apos;s still missing:</b> the &quot;unusual&quot; alternative
-            data (satellite night-lights, shipping traffic, search trends) described in the original
-            vision needs paid/complex API access this build doesn&apos;t have yet. Everything below is
-            public World Bank data, plus one AllForecasts-computed trend projection.
+            <b className="text-ink">What&apos;s still missing:</b> the &quot;unusual&quot;
+            alternative data (satellite night-lights, shipping traffic, arms trade, conflict data)
+            from the original vision needs paid/complex API access this build doesn&apos;t have
+            yet. Everything below is public World Bank data, plus one AllForecasts trend projection.
           </p>
         </div>
 
@@ -126,34 +147,36 @@ export default async function InsightsPage() {
         ) : (
           <>
             <h2 className="section-title">Strongest cross-category relationships</h2>
-            <div className="overflow-x-auto mb-10">
-              <table className="w-full text-sm border-collapse min-w-[640px]">
-                <thead>
-                  <tr className="font-mono text-[11px] uppercase tracking-wide text-ink-soft">
-                    <th className="text-left py-2 border-b border-line font-medium">Indicator A</th>
-                    <th className="text-left py-2 border-b border-line font-medium">Indicator B</th>
-                    <th className="text-left py-2 border-b border-line font-medium">r</th>
-                    <th className="text-left py-2 border-b border-line font-medium">Countries (n)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {crossCategory.slice(0, 20).map((p) => (
-                    <tr key={`${p.a}|${p.b}`}>
-                      <td className="py-2.5 border-b border-line">
-                        {p.a} <span className="font-mono text-xs text-ink-soft">({p.categoryA})</span>
-                      </td>
-                      <td className="py-2.5 border-b border-line">
-                        {p.b} <span className="font-mono text-xs text-ink-soft">({p.categoryB})</span>
-                      </td>
-                      <td className={`py-2.5 border-b border-line font-mono ${p.r > 0 ? "text-good" : "text-warn"}`}>
-                        {p.r > 0 ? "+" : ""}
-                        {p.r.toFixed(2)}
-                      </td>
-                      <td className="py-2.5 border-b border-line font-mono text-ink-soft">{p.n}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="flex flex-col gap-4 mb-8">
+              {top.map((p) => {
+                const { meaning, personas } = interpretPair(p.categoryA, p.categoryB, p.r);
+                return (
+                  <div key={`${p.a}|${p.b}`} className="card p-5">
+                    <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                      <div className="text-sm">
+                        <span className="text-ink">{p.a}</span>
+                        <span className="text-ink-soft mx-1.5">↔</span>
+                        <span className="text-ink">{p.b}</span>
+                      </div>
+                      <RBar r={p.r} />
+                    </div>
+                    <p className="text-sm text-ink-soft mb-3">{meaning}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {personas.map((persona) => (
+                        <span
+                          key={persona}
+                          className="font-mono text-[11px] uppercase tracking-wide px-2 py-1 rounded bg-accent/10 text-accent"
+                        >
+                          {persona}
+                        </span>
+                      ))}
+                      <span className="font-mono text-[11px] text-ink-soft ml-auto">
+                        {p.n} countries · {p.categoryA} × {p.categoryB}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             <p className="font-mono text-xs text-ink-soft">

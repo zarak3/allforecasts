@@ -43,8 +43,8 @@ export default function WorldMap({
             key={f.id}
             d={d}
             fill={isSelected ? "#1e3a5f" : isHovered ? "#1e3a5f55" : "#f2ecdd"}
-            stroke="#ddd4bd"
-            strokeWidth={0.5}
+            stroke="#a99b76"
+            strokeWidth={1}
             style={{ cursor: clickable ? "pointer" : "default" }}
             onMouseEnter={() => setHovered(f.id)}
             onMouseLeave={() => setHovered((h) => (h === f.id ? null : h))}

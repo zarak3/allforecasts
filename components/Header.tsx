@@ -4,7 +4,7 @@ export default function Header() {
   return (
     <header className="border-b border-line py-5">
       <div className="max-w-4xl mx-auto px-6 flex items-baseline justify-between flex-wrap gap-2">
-        <Link href="/" className="font-mono font-semibold text-lg tracking-tight text-ink no-underline">
+        <Link href="/" className="font-serif font-medium text-xl tracking-normal text-ink no-underline">
           All<span className="text-accent">Forecasts</span>
         </Link>
         <nav className="flex gap-5">
@@ -12,7 +12,7 @@ export default function Header() {
             Predictions
           </Link>
           <Link href="/countries" className="font-mono text-sm text-ink-soft no-underline hover:text-accent">
-            Country data
+            Countries
           </Link>
           <Link href="/insights" className="font-mono text-sm text-ink-soft no-underline hover:text-accent">
             Insights

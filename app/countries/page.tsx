@@ -43,13 +43,13 @@ export default async function CountriesPage() {
   return (
     <main className="section pt-16">
       <div className="max-w-5xl mx-auto px-6">
-        <div className="eyebrow mb-3">Country view</div>
+        <div className="eyebrow mb-3">Countries</div>
         <h1 className="text-3xl font-medium mb-3">Indicator comparison</h1>
         <p className="text-ink-soft max-w-xl mb-10">
-          Live from the generic <code className="font-mono text-sm">entities</code> /{" "}
-          <code className="font-mono text-sm">indicators</code> schema — the same structure every
-          future view (city, business, person) reads from. Pick a country on the map, the globe,
-          or the dropdown.
+          GDP, debt, inflation, jobs, health, and defence spending for 217 countries — the same
+          numbers a government would use to benchmark policy, a business to size up a market, or
+          a person to check what they&apos;re moving into. Pick a country on the map, the globe, or
+          the dropdown.
         </p>
 
         {loadError ? (

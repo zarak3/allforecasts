@@ -68,8 +68,8 @@ export default function SpinningGlobe({
         const isHovered = f.id === hoveredIdRef.current;
         ctx.fillStyle = isSelected ? "#1e3a5f" : isHovered ? "#1e3a5f88" : "#e4dcc4";
         ctx.fill();
-        ctx.strokeStyle = "#c9bd9c";
-        ctx.lineWidth = 0.4;
+        ctx.strokeStyle = "#a99b76";
+        ctx.lineWidth = 0.8;
         ctx.stroke();
       }
 

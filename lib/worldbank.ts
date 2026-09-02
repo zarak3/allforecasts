@@ -22,7 +22,14 @@ export const WORLD_BANK_INDICATORS: Record<
   "NY.GNP.PCAP.CD": { label: "GNI per capita (Atlas method)", category: "economic", unit: "USD" },
   "SP.DYN.IMRT.IN": { label: "Infant mortality rate", category: "health", unit: "per 1,000 live births" },
   "SH.MED.PHYS.ZS": { label: "Physicians", category: "health", unit: "per 1,000 people" },
+  "MS.MIL.XPND.GD.ZS": { label: "Military expenditure", category: "defence", unit: "% of GDP" },
+  "MS.MIL.TOTL.P1": { label: "Armed forces personnel", category: "defence", unit: "people" },
 };
+
+// Real-world coverage gap, worth being upfront about: true arms-trade
+// volumes and war/conflict incident data (SIPRI, UCDP) aren't in World
+// Bank's catalog and need a separate paid/complex integration -- military
+// expenditure and personnel above are the honest slice available for free.
 
 export interface WorldBankCountry {
   code: string; // ISO2
