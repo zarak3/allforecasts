@@ -1,5 +1,6 @@
 import Link from "next/link";
 import ZenoTeaser from "@/components/ZenoTeaser";
+import PredictionCall from "@/components/PredictionCall";
 
 const INDICATORS = [
   { name: "Flash composite PMI (July)", reading: "52.1, up from 49.3", direction: "up" },
@@ -28,7 +29,9 @@ export default function HomePage() {
           </h1>
           <p className="text-lg text-ink-soft max-w-xl">
             Real public data, screened for genuine links between them, turned into plain-language
-            forecasts — for a country, a city, a business, or a person.
+            forecasts — for a country, a city, a business, or a person. No guesswork dressed up as
+            insight: every number here is either pulled live from a public source or computed in
+            the open, with the reasoning shown, not hidden behind the call.
           </p>
         </div>
       </section>
@@ -37,8 +40,10 @@ export default function HomePage() {
         <div className="max-w-4xl mx-auto px-6">
           <h2 className="section-title">Live prediction — #1</h2>
           <div className="card p-7">
-            <div className="font-mono text-sm text-ink-soft">UK monthly GDP · July 2026</div>
-            <div className="font-mono text-3xl font-semibold text-accent my-1">+0.1% to +0.3% m/m</div>
+            <div className="font-mono text-sm text-ink-soft mb-2">UK monthly GDP · July 2026</div>
+            <div className="mb-3">
+              <PredictionCall call="+0.1% to +0.3% m/m" size="xl" />
+            </div>
             <div className="font-mono text-xs text-ink-soft flex gap-5 flex-wrap mb-5">
               <span>
                 Central estimate: <b className="text-ink">~+0.2%</b>

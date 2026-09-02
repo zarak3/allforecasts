@@ -1,4 +1,5 @@
 import type { Prediction } from "@/lib/types";
+import PredictionCall from "@/components/PredictionCall";
 
 function formatDate(iso: string | null) {
   if (!iso) return null;
@@ -34,7 +35,9 @@ export default function PredictionCard({ prediction }: { prediction: Prediction 
         )}
       </div>
 
-      <div className="font-mono text-2xl font-semibold text-accent mb-3">{prediction.call}</div>
+      <div className="mb-3">
+        <PredictionCall call={prediction.call} />
+      </div>
 
       <div className="font-mono text-xs text-ink-soft flex gap-4 flex-wrap mb-1">
         <span>

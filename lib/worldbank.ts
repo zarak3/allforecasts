@@ -24,6 +24,10 @@ export const WORLD_BANK_INDICATORS: Record<
   "SH.MED.PHYS.ZS": { label: "Physicians", category: "health", unit: "per 1,000 people" },
   "MS.MIL.XPND.GD.ZS": { label: "Military expenditure", category: "defence", unit: "% of GDP" },
   "MS.MIL.TOTL.P1": { label: "Armed forces personnel", category: "defence", unit: "people" },
+  "NE.EXP.GNFS.ZS": { label: "Exports of goods and services", category: "trade", unit: "% of GDP" },
+  "NE.IMP.GNFS.ZS": { label: "Imports of goods and services", category: "trade", unit: "% of GDP" },
+  "TM.TAX.MRCH.WM.AR.ZS": { label: "Average tariff rate", category: "trade", unit: "%" },
+  "SM.POP.NETM": { label: "Net migration", category: "demographic", unit: "people" },
 };
 
 // Real-world coverage gap, worth being upfront about: true arms-trade

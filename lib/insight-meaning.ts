@@ -70,6 +70,30 @@ const PAIR_TEMPLATES: Record<string, (positive: boolean) => Interpretation> = {
     meaning: "Population size and defence spending move together — larger countries generally field larger militaries in absolute terms.",
     personas: ["Government"],
   }),
+  "economic|trade": (positive) => ({
+    meaning: positive
+      ? "Trade openness scales with economic strength — relevant for a business weighing how easy a market is to actually sell into or source from."
+      : "Trade exposure doesn't track this economic measure directly — a country can be trade-heavy without being rich, or vice versa.",
+    personas: ["Government", "Business"],
+  }),
+  "demographic|trade": (positive) => ({
+    meaning: positive
+      ? "Population and trade flows move together — larger economies generally move more goods in absolute terms."
+      : "Trade flows don't scale with population here — some smaller countries punch well above their size on trade.",
+    personas: ["Government", "Business"],
+  }),
+  "defence|trade": () => ({
+    meaning: "Defence spending and trade exposure correlate here — worth a closer look at what's actually driving it before reading too much in.",
+    personas: ["Government", "Business"],
+  }),
+  "education|trade": () => ({
+    meaning: "Education levels and trade exposure move together — often both reflecting how integrated an economy is globally.",
+    personas: ["Government", "Business"],
+  }),
+  "health|trade": () => ({
+    meaning: "Trade exposure and this health outcome correlate — likely both downstream of overall development level rather than a direct link.",
+    personas: ["Government"],
+  }),
 };
 
 export function interpretPair(
