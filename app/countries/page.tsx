@@ -13,8 +13,9 @@ async function getData(): Promise<{ indicators: Indicator[]; entities: Entity[];
         .from("indicators")
         .select("id, name, category, source, value, unit, period, entity:entities!inner(id, type, name, code)")
         .eq("entity.type", "country")
-        .order("name"),
-      supabase.from("entities").select("id, type, name, code").eq("type", "country").order("name"),
+        .order("name")
+        .range(0, 19999), // default PostgREST cap is 1000 rows -- we have 3000+
+      supabase.from("entities").select("id, type, name, code").eq("type", "country").order("name").range(0, 9999),
     ]);
     if (indicatorsRes.error) throw new Error(indicatorsRes.error.message);
     if (entitiesRes.error) throw new Error(entitiesRes.error.message);

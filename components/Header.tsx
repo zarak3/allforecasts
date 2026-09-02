@@ -20,9 +20,9 @@ export default function Header() {
           <Link href="/#method" className="font-mono text-sm text-ink-soft no-underline hover:text-accent">
             Method
           </Link>
-          <a href="mailto:hello@allforecasts.com" className="font-mono text-sm text-ink-soft no-underline hover:text-accent">
+          <Link href="/contact" className="font-mono text-sm text-ink-soft no-underline hover:text-accent">
             Contact
-          </a>
+          </Link>
         </nav>
       </div>
     </header>

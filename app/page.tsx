@@ -1,18 +1,17 @@
 import Link from "next/link";
-import FanChart from "@/components/FanChart";
 
 const INDICATORS = [
-  { name: "Flash composite PMI (July)", reading: "52.1, up from 49.3", signal: "bullish", tone: "good" },
-  { name: "Retail sales (July)", reading: "−0.5% m/m", signal: "bearish*", tone: "warn" },
-  { name: "Energy price cap", reading: "+13% from 1 July", signal: "headwind", tone: "warn" },
-  { name: "GfK consumer confidence (July)", reading: "+6pts, biggest jump since Nov 2023", signal: "bullish", tone: "good" },
-  { name: "Labour market", reading: "Unemployment flat at 4.9%", signal: "neutral", tone: "neutral" },
+  { name: "Flash composite PMI (July)", reading: "52.1, up from 49.3", direction: "up" },
+  { name: "Retail sales (July)", reading: "−0.5% m/m", direction: "down" },
+  { name: "Energy price cap", reading: "+13% from 1 July", direction: "down" },
+  { name: "GfK consumer confidence (July)", reading: "+6pts, biggest jump since Nov 2023", direction: "up" },
+  { name: "Labour market", reading: "Unemployment flat at 4.9%", direction: "flat" },
 ] as const;
 
-const toneClass: Record<string, string> = {
-  good: "text-good",
-  warn: "text-warn",
-  neutral: "text-ink-soft",
+const arrow: Record<string, { glyph: string; className: string }> = {
+  up: { glyph: "↑", className: "text-good" },
+  down: { glyph: "↓", className: "text-warn" },
+  flat: { glyph: "→", className: "text-ink-soft" },
 };
 
 export default function HomePage() {
@@ -27,16 +26,11 @@ export default function HomePage() {
             before it&apos;s official.
           </h1>
           <p className="text-lg text-ink-soft max-w-xl">
-            AllForecasts pulls together data that&apos;s normally siloed — economic, health,
-            education, and increasingly unusual alternative data — screens it for genuine
-            lead-lag relationships (Granger causality, not raw correlation), and turns validated
-            relationships into plain-language, falsifiable forecasts for a country, a city, a
-            business, or a person.
+            Real public data, screened for genuine links between them, turned into plain-language
+            forecasts — for a country, a city, a business, or a person.
           </p>
         </div>
       </section>
-
-      <FanChart todayLabel="1 Sept 2026" releaseLabel="ONS, 11 Sept 2026" />
 
       <section className="section" id="prediction">
         <div className="max-w-4xl mx-auto px-6">
@@ -53,12 +47,12 @@ export default function HomePage() {
               </span>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm border-collapse min-w-[520px]">
+              <table className="w-full text-sm border-collapse min-w-[480px]">
                 <thead>
                   <tr className="font-mono text-[11px] uppercase tracking-wide text-ink-soft">
                     <th className="text-left py-2 border-b border-line font-medium">Indicator</th>
                     <th className="text-left py-2 border-b border-line font-medium">Reading</th>
-                    <th className="text-left py-2 border-b border-line font-medium">Signal</th>
+                    <th className="text-center py-2 border-b border-line font-medium">Direction</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -66,17 +60,18 @@ export default function HomePage() {
                     <tr key={row.name}>
                       <td className="py-2.5 border-b border-line">{row.name}</td>
                       <td className="py-2.5 border-b border-line font-mono whitespace-nowrap">{row.reading}</td>
-                      <td className={`py-2.5 border-b border-line font-mono ${toneClass[row.tone]}`}>{row.signal}</td>
+                      <td className={`py-2.5 border-b border-line font-mono text-center text-lg ${arrow[row.direction].className}`}>
+                        {arrow[row.direction].glyph}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
             <p className="text-sm text-ink-soft mt-4">
-              *Read as payback from May/June promotional pull-forward rather than new weakness. No
-              City/analyst consensus was publicly available for this release at time of writing;
-              professional consensus historically misses by ~0.2pp, which sets a realistic ceiling
-              on precision at this stage.
+              Retail sales dipped, but that reads as payback from a May/June promotional pull-forward
+              rather than new weakness. No analyst consensus was published for this release yet;
+              professional consensus historically misses by ~0.2pp either way.
             </p>
           </div>
         </div>
@@ -122,16 +117,27 @@ export default function HomePage() {
       </section>
 
       <section className="section">
-        <div className="max-w-4xl mx-auto px-6 grid sm:grid-cols-2 gap-4">
+        <div className="max-w-4xl mx-auto px-6 grid sm:grid-cols-3 gap-4">
           <div className="card p-6 flex flex-col justify-between">
             <div>
-              <div className="font-mono text-sm mb-1">Country comparison</div>
+              <div className="font-mono text-sm mb-1">Country data</div>
               <div className="text-ink-soft text-sm">
-                GDP per capita, life expectancy, and literacy across 10 countries.
+                GDP, debt, health, jobs and more, across 217 countries.
               </div>
             </div>
             <Link href="/countries" className="btn mt-4 inline-block w-fit no-underline">
               View table →
+            </Link>
+          </div>
+          <div className="card p-6 flex flex-col justify-between">
+            <div>
+              <div className="font-mono text-sm mb-1">Insights</div>
+              <div className="text-ink-soft text-sm">
+                Which indicators actually move together, screened for real.
+              </div>
+            </div>
+            <Link href="/insights" className="btn mt-4 inline-block w-fit no-underline">
+              See insights →
             </Link>
           </div>
           <div className="card p-6 flex flex-col justify-between">

@@ -23,10 +23,14 @@ interface PairResult {
 async function computeCorrelations(): Promise<{ pairs: PairResult[]; loadError: string | null }> {
   try {
     const supabase = supabaseServer();
+    // Supabase/PostgREST caps unpaginated selects at 1000 rows by default --
+    // with 16 indicators x 217 countries that silently truncated to ~6
+    // indicators worth of data. Explicit range covers real + near-future volume.
     const { data, error } = await supabase
       .from("indicators")
       .select("entity_id, name, category, value, entity:entities!inner(type)")
-      .eq("entity.type", "country");
+      .eq("entity.type", "country")
+      .range(0, 19999);
     if (error) throw new Error(error.message);
 
     const rows = (data ?? []) as unknown as IndicatorRow[];
@@ -36,8 +40,14 @@ async function computeCorrelations(): Promise<{ pairs: PairResult[]; loadError: 
     const byIndicator = new Map<string, Map<string, number>>();
     const categoryOf = new Map<string, string>();
     for (const row of rows) {
+      // Postgres `numeric` columns come back as JSON strings via PostgREST
+      // (arbitrary precision, so it won't silently assume float-safe) --
+      // coerce explicitly or `+` on two of these string-concatenates instead
+      // of adding, which is exactly the bug that shipped here first.
+      const value = Number(row.value);
+      if (!Number.isFinite(value)) continue;
       if (!byIndicator.has(row.name)) byIndicator.set(row.name, new Map());
-      byIndicator.get(row.name)!.set(row.entity_id, row.value);
+      byIndicator.get(row.name)!.set(row.entity_id, value);
       categoryOf.set(row.name, row.category);
     }
 

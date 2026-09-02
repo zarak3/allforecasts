@@ -4,7 +4,9 @@ import {
   WORLD_BANK_INDICATORS,
   fetchAllCountries,
   fetchWorldBankIndicatorForAllCountries,
+  fetchWorldBankHistoryForAllCountries,
 } from "@/lib/worldbank";
+import { linearTrendForecast } from "@/lib/stats";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -55,6 +57,13 @@ export async function GET(req: NextRequest) {
       .in("name", indicatorLabels)
       .eq("source", "World Bank");
     if (deleteError) errors.push(deleteError.message);
+
+    const { error: deleteModelError } = await supabase
+      .from("indicators")
+      .delete()
+      .in("entity_id", idBatch)
+      .eq("source", "AllForecasts model");
+    if (deleteModelError) errors.push(deleteModelError.message);
   }
 
   const rows: Record<string, unknown>[] = [];
@@ -79,6 +88,41 @@ export async function GET(req: NextRequest) {
     } catch (err) {
       errors.push(err instanceof Error ? err.message : String(err));
     }
+  }
+
+  // Naive per-country GDP growth projection: ordinary least-squares trend
+  // over the last 8 years of real World Bank data, extrapolated one year
+  // forward. This is a mechanical statistical baseline, not a researched
+  // call -- it's tagged with a distinct source so it never gets confused
+  // with the raw World Bank figures or the hand-researched predictions.
+  try {
+    const history = await fetchWorldBankHistoryForAllCountries("NY.GDP.MKTP.KD.ZG", countryCodes, 8);
+    const byCountry = new Map<string, { x: number; y: number }[]>();
+    for (const entry of history) {
+      if (entry.value === null) continue;
+      if (!byCountry.has(entry.countryiso2code)) byCountry.set(entry.countryiso2code, []);
+      byCountry.get(entry.countryiso2code)!.push({ x: Number(entry.date), y: entry.value });
+    }
+    const currentYear = new Date().getUTCFullYear();
+    for (const [code, points] of byCountry) {
+      const entityId = entityIdByCode[code];
+      if (!entityId || points.length === 0) continue;
+      const projected = linearTrendForecast(points);
+      if (projected === null || !Number.isFinite(projected)) continue;
+      const lastYear = Math.max(...points.map((p) => p.x));
+      rows.push({
+        entity_id: entityId,
+        name: "GDP growth, next period (projected)",
+        category: "economic",
+        source: "AllForecasts model",
+        source_code: "MODEL.GDP.TREND",
+        value: projected,
+        unit: "%",
+        period: `${Math.max(lastYear + 1, currentYear)}-01-01`,
+      });
+    }
+  } catch (err) {
+    errors.push(err instanceof Error ? err.message : String(err));
   }
 
   let inserted = 0;

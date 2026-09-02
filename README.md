@@ -44,8 +44,9 @@ cron job pulling fresh indicator data.
    ```
 
    Open http://localhost:3000.
-5. **Load the first batch of data** (10 countries x 3 World Bank
-   indicators): with the dev server running, in another terminal:
+5. **Load the data** (all 217 World Bank countries x 16 indicators, plus a
+   per-country GDP trend projection): with the dev server running, in
+   another terminal:
 
    ```bash
    curl http://localhost:3000/api/cron/refresh-indicators

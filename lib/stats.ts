@@ -22,3 +22,28 @@ export function pearson(xs: number[], ys: number[]): number | null {
   if (varX === 0 || varY === 0) return null;
   return cov / Math.sqrt(varX * varY);
 }
+
+// Ordinary least-squares trend, extrapolated one step past the last point.
+// Deliberately naive (no seasonality, no external indicators) -- it's a
+// mechanical baseline, not a researched call. Falls back to the last known
+// value when there's only one point to work with.
+export function linearTrendForecast(points: { x: number; y: number }[]): number | null {
+  const sorted = [...points].sort((a, b) => a.x - b.x);
+  const n = sorted.length;
+  if (n === 0) return null;
+  if (n === 1) return sorted[0].y;
+
+  const meanX = sorted.reduce((a, p) => a + p.x, 0) / n;
+  const meanY = sorted.reduce((a, p) => a + p.y, 0) / n;
+  let num = 0;
+  let den = 0;
+  for (const p of sorted) {
+    num += (p.x - meanX) * (p.y - meanY);
+    den += (p.x - meanX) * (p.x - meanX);
+  }
+  if (den === 0) return sorted[n - 1].y;
+  const slope = num / den;
+  const intercept = meanY - slope * meanX;
+  const nextX = sorted[n - 1].x + 1;
+  return slope * nextX + intercept;
+}

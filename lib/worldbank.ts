@@ -79,3 +79,26 @@ export async function fetchWorldBankIndicatorForAllCountries(
     .filter((r) => knownCountryCodes.has(r.country?.id))
     .map((r) => ({ countryiso2code: r.country.id, date: r.date, value: r.value }));
 }
+
+// Fetches several years of history for one indicator, all countries, in a
+// single call -- the input for a real (if simple) trend extrapolation,
+// rather than a single latest-value snapshot.
+export async function fetchWorldBankHistoryForAllCountries(
+  indicatorCode: string,
+  knownCountryCodes: Set<string>,
+  yearsBack = 8
+): Promise<WorldBankEntry[]> {
+  const endYear = new Date().getUTCFullYear();
+  const startYear = endYear - yearsBack;
+  const url = `https://api.worldbank.org/v2/country/all/indicator/${indicatorCode}?format=json&per_page=20000&date=${startYear}:${endYear}`;
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(`World Bank API error for ${indicatorCode} history: ${res.status}`);
+  }
+  const payload = await res.json();
+  if (!Array.isArray(payload) || payload.length < 2 || !payload[1]) return [];
+  const rows = payload[1] as RawWorldBankEntry[];
+  return rows
+    .filter((r) => knownCountryCodes.has(r.country?.id) && r.value !== null)
+    .map((r) => ({ countryiso2code: r.country.id, date: r.date, value: r.value }));
+}

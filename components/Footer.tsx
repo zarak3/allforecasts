@@ -10,8 +10,12 @@ export default function Footer() {
         </p>
         <p>
           hello@allforecasts.com ·{" "}
-          <a href="https://x.com/allforecasts" className="text-ink-soft hover:text-accent">
-            @allforecasts
+          <a href="https://x.com/allforecast" className="text-ink-soft hover:text-accent">
+            @allforecast
+          </a>{" "}
+          ·{" "}
+          <a href="https://instagram.com/allforecast" className="text-ink-soft hover:text-accent">
+            Instagram
           </a>
         </p>
       </div>

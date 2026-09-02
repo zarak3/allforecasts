@@ -13,7 +13,8 @@ export async function GET(req: NextRequest) {
     .from("indicators")
     .select("id, name, category, source, value, unit, period, entity:entities!inner(id, type, name, code)")
     .eq("entity.type", entityType)
-    .order("name");
+    .order("name")
+    .range(0, 19999); // default PostgREST cap is 1000 rows -- we have 3000+
 
   if (category) query = query.eq("category", category);
 
