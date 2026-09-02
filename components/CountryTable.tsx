@@ -27,6 +27,47 @@ function formatValue(value: number, unit: string | null) {
   return unit ? `${formatted} ${unit}` : formatted;
 }
 
+const CATEGORY_LABELS: Record<string, string> = {
+  economic: "Economic",
+  health: "Health",
+  education: "Education",
+  demographic: "Demographic",
+  defence: "Defence",
+  trade: "Trade",
+};
+
+function CountryStatCards({ rows }: { rows: Indicator[] }) {
+  const grouped = useMemo(() => {
+    const map = new Map<string, Indicator[]>();
+    for (const row of rows) {
+      if (!map.has(row.category)) map.set(row.category, []);
+      map.get(row.category)!.push(row);
+    }
+    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
+  }, [rows]);
+
+  return (
+    <div className="flex flex-col gap-8">
+      {grouped.map(([category, items]) => (
+        <div key={category}>
+          <h3 className="section-title mb-3">{CATEGORY_LABELS[category] ?? category}</h3>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {items.map((row) => (
+              <div key={row.id} className="card p-4">
+                <div className="text-xs text-ink-soft mb-1">{row.name}</div>
+                <div className="font-mono text-xl text-ink">{formatValue(row.value, row.unit)}</div>
+                <div className="font-mono text-[11px] text-ink-soft mt-1">
+                  {new Date(row.period).getUTCFullYear()} · {row.source}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function CountryTable({
   indicators,
   selectedCode,
@@ -74,7 +115,7 @@ export default function CountryTable({
           <option value="all">All</option>
           {categories.map((c) => (
             <option key={c} value={c}>
-              {c}
+              {CATEGORY_LABELS[c] ?? c}
             </option>
           ))}
         </select>
@@ -90,37 +131,41 @@ export default function CountryTable({
           </span>
         )}
 
-        <span className="text-ink-soft">{rows.length} rows</span>
+        {!selectedCode && <span className="text-ink-soft">{rows.length} rows</span>}
       </div>
 
-      <div className="overflow-x-auto max-h-[520px] overflow-y-auto">
-        <table className="w-full text-sm border-collapse">
-          <thead className="sticky top-0 bg-paper">
-            <tr className="font-mono text-[11px] uppercase tracking-wide text-ink-soft">
-              <th className="text-left py-2 border-b border-line font-medium">Country</th>
-              <th className="text-left py-2 border-b border-line font-medium">Indicator</th>
-              <th className="text-left py-2 border-b border-line font-medium">Value</th>
-              <th className="text-left py-2 border-b border-line font-medium">Period</th>
-              <th className="text-left py-2 border-b border-line font-medium">Source</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.id}>
-                <td className="py-2.5 border-b border-line">
-                  {displayCountryName(row.entity?.code, row.entity?.name ?? "")}
-                </td>
-                <td className="py-2.5 border-b border-line">{row.name}</td>
-                <td className="py-2.5 border-b border-line font-mono">{formatValue(row.value, row.unit)}</td>
-                <td className="py-2.5 border-b border-line font-mono">
-                  {new Date(row.period).getUTCFullYear()}
-                </td>
-                <td className="py-2.5 border-b border-line font-mono text-ink-soft">{row.source}</td>
+      {selectedCode ? (
+        <CountryStatCards rows={rows} />
+      ) : (
+        <div className="overflow-x-auto max-h-[520px] overflow-y-auto">
+          <table className="w-full text-sm border-collapse">
+            <thead className="sticky top-0 bg-paper">
+              <tr className="font-mono text-[11px] uppercase tracking-wide text-ink-soft">
+                <th className="text-left py-2 border-b border-line font-medium">Country</th>
+                <th className="text-left py-2 border-b border-line font-medium">Indicator</th>
+                <th className="text-left py-2 border-b border-line font-medium">Value</th>
+                <th className="text-left py-2 border-b border-line font-medium">Period</th>
+                <th className="text-left py-2 border-b border-line font-medium">Source</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.id}>
+                  <td className="py-2.5 border-b border-line">
+                    {displayCountryName(row.entity?.code, row.entity?.name ?? "")}
+                  </td>
+                  <td className="py-2.5 border-b border-line">{row.name}</td>
+                  <td className="py-2.5 border-b border-line font-mono">{formatValue(row.value, row.unit)}</td>
+                  <td className="py-2.5 border-b border-line font-mono">
+                    {new Date(row.period).getUTCFullYear()}
+                  </td>
+                  <td className="py-2.5 border-b border-line font-mono text-ink-soft">{row.source}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

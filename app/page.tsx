@@ -123,10 +123,10 @@ export default function HomePage() {
       </section>
 
       <section className="section">
-        <div className="max-w-4xl mx-auto px-6 grid sm:grid-cols-3 gap-4">
+        <div className="max-w-4xl mx-auto px-6 grid sm:grid-cols-2 gap-4">
           <div className="card p-6 flex flex-col justify-between">
             <div>
-              <div className="font-mono text-sm mb-1">Country data</div>
+              <div className="font-mono text-sm mb-1">Countries</div>
               <div className="text-ink-soft text-sm">
                 GDP, debt, health, jobs and more, across 217 countries.
               </div>
@@ -144,6 +144,17 @@ export default function HomePage() {
             </div>
             <Link href="/insights" className="btn mt-4 inline-block w-fit no-underline">
               See insights →
+            </Link>
+          </div>
+          <div className="card p-6 flex flex-col justify-between">
+            <div>
+              <div className="font-mono text-sm mb-1">Markets</div>
+              <div className="text-ink-soft text-sm">
+                Gold, oil, silver, and major currencies — live, interactive.
+              </div>
+            </div>
+            <Link href="/markets" className="btn mt-4 inline-block w-fit no-underline">
+              View markets →
             </Link>
           </div>
           <div className="card p-6 flex flex-col justify-between">
