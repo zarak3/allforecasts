@@ -102,7 +102,7 @@ export default function HomePage() {
                 Compare any two indicators yourself, or browse what moves together.
               </div>
             </div>
-            <Link href="/correlations" className="btn mt-4 inline-block w-fit no-underline">
+            <Link href="/correlations" prefetch={false} className="btn mt-4 inline-block w-fit no-underline">
               Compare data →
             </Link>
           </div>
@@ -113,7 +113,7 @@ export default function HomePage() {
                 Gold, oil, silver, and major currencies — live, interactive.
               </div>
             </div>
-            <Link href="/markets" className="btn mt-4 inline-block w-fit no-underline">
+            <Link href="/markets" prefetch={false} className="btn mt-4 inline-block w-fit no-underline">
               View markets →
             </Link>
           </div>

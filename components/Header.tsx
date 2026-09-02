@@ -14,10 +14,10 @@ export default function Header() {
           <Link href="/countries" className="font-mono text-sm text-ink-soft no-underline hover:text-accent">
             Countries
           </Link>
-          <Link href="/correlations" className="font-mono text-sm text-ink-soft no-underline hover:text-accent">
+          <Link href="/correlations" prefetch={false} className="font-mono text-sm text-ink-soft no-underline hover:text-accent">
             Correlations
           </Link>
-          <Link href="/markets" className="font-mono text-sm text-ink-soft no-underline hover:text-accent">
+          <Link href="/markets" prefetch={false} className="font-mono text-sm text-ink-soft no-underline hover:text-accent">
             Markets
           </Link>
           <Link href="/zeno" className="font-mono text-sm text-ink-soft no-underline hover:text-accent">
