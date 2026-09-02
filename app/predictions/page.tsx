@@ -32,9 +32,13 @@ export default async function PredictionsPage() {
       <div className="max-w-4xl mx-auto px-6">
         <div className="eyebrow mb-3">Track record</div>
         <h1 className="text-3xl font-medium mb-3">Predictions</h1>
-        <p className="text-ink-soft max-w-xl mb-8">
+        <p className="text-ink-soft max-w-xl mb-2">
           Every dated, falsifiable call, published before the outcome was known, and its
           resolution once the official data lands.
+        </p>
+        <p className="font-mono text-xs text-ink-soft max-w-xl mb-8">
+          Each one names its resolution source and date up front — no moving the goalposts
+          after the fact.
         </p>
 
         {loadError ? (

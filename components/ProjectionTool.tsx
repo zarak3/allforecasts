@@ -41,11 +41,13 @@ export default function ProjectionTool({ entities }: { entities: EntityOption[] 
   const [result, setResult] = useState<Result | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [scenarioPct, setScenarioPct] = useState(0);
 
   async function run() {
     setLoading(true);
     setError(null);
     setResult(null);
+    setScenarioPct(0);
     try {
       const res = await fetch(`/api/projection?country=${country}&indicator=${code}&years=${years}`);
       const data = await res.json();
@@ -57,6 +59,11 @@ export default function ProjectionTool({ entities }: { entities: EntityOption[] 
       setLoading(false);
     }
   }
+
+  const scenarioValue =
+    result && result.projected !== null && result.lastKnownValue !== null
+      ? result.lastKnownValue + (result.projected - result.lastKnownValue) * (1 + scenarioPct / 100)
+      : null;
 
   return (
     <div className="card p-5">
@@ -139,11 +146,42 @@ export default function ProjectionTool({ entities }: { entities: EntityOption[] 
                 history={result.history}
                 targetYear={result.targetYear}
                 projected={result.projected}
+                scenario={scenarioPct !== 0 ? scenarioValue : null}
                 unit={result.unit}
               />
               <p className="font-mono text-[11px] text-ink-soft mt-2">
                 <span className="text-accent">— — —</span> dashed segment is the projection, not real data.
               </p>
+
+              {result.lastKnownValue !== null && (
+                <div className="mt-5 pt-4 border-t border-line">
+                  <label className="text-xs font-mono text-ink-soft block mb-2">
+                    Scenario: what if the trend runs {scenarioPct === 0 ? "as fitted" : scenarioPct > 0 ? "faster" : "slower"}?
+                    <input
+                      type="range"
+                      min={-100}
+                      max={150}
+                      step={10}
+                      value={scenarioPct}
+                      onChange={(e) => setScenarioPct(Number(e.target.value))}
+                      className="w-full mt-2 accent-[#6b46c1]"
+                    />
+                  </label>
+                  <div className="flex items-baseline justify-between font-mono text-xs text-ink-soft">
+                    <span>−100% (flat, no further change)</span>
+                    <span className="text-[#6b46c1] font-semibold">
+                      {scenarioPct > 0 ? "+" : ""}
+                      {scenarioPct}%{scenarioValue !== null ? ` → ${formatValue(scenarioValue, result.unit)}` : ""}
+                    </span>
+                    <span>+150% (trend 2.5x steeper)</span>
+                  </div>
+                  <p className="font-mono text-[11px] text-ink-soft mt-2">
+                    <span className="text-[#6b46c1]">· · ·</span> dotted line is this hypothetical, not a
+                    data-derived projection — it scales the fitted trend&apos;s change up or down by your
+                    chosen amount.
+                  </p>
+                </div>
+              )}
             </>
           )}
         </div>
