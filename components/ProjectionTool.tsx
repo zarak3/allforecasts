@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { WORLD_BANK_INDICATORS } from "@/lib/worldbank";
+import ProjectionChart from "@/components/ProjectionChart";
 
 interface EntityOption {
   code: string;
@@ -16,6 +17,7 @@ interface Result {
   lastKnownYear: number;
   lastKnownValue: number | null;
   pointsUsed: number;
+  history: { year: number; value: number }[];
 }
 
 const INDICATOR_OPTIONS = Object.entries(WORLD_BANK_INDICATORS).map(([code, meta]) => ({
@@ -128,10 +130,19 @@ export default function ProjectionTool({ entities }: { entities: EntityOption[] 
                 </span>
                 <span className="font-mono text-xs text-ink-soft">projected for {result.targetYear}</span>
               </div>
-              <p className="text-sm text-ink-soft">
+              <p className="text-sm text-ink-soft mb-4">
                 Last real reading: {result.lastKnownValue !== null ? formatValue(result.lastKnownValue, result.unit) : "—"}{" "}
                 ({result.lastKnownYear}), based on {result.pointsUsed} years of real World Bank data for{" "}
                 {result.label}.
+              </p>
+              <ProjectionChart
+                history={result.history}
+                targetYear={result.targetYear}
+                projected={result.projected}
+                unit={result.unit}
+              />
+              <p className="font-mono text-[11px] text-ink-soft mt-2">
+                <span className="text-accent">— — —</span> dashed segment is the projection, not real data.
               </p>
             </>
           )}

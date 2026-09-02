@@ -39,6 +39,7 @@ export async function GET(req: NextRequest) {
         lastKnownYear: lastYear,
         lastKnownValue: points.find((p) => p.x === lastYear)?.y ?? null,
         pointsUsed: points.length,
+        history: points.map((p) => ({ year: p.x, value: p.y })),
       },
     });
   } catch (err) {

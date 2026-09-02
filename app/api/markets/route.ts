@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { COMMODITIES, CURRENCIES, fetchCommodity, fetchCurrency } from "@/lib/markets";
 
 export const revalidate = 300; // 5 min -- real prices, refreshed often without hammering the upstream APIs
+export const maxDuration = 30; // currency history is built from several parallel date-sampled requests
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
