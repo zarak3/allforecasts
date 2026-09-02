@@ -97,13 +97,13 @@ export default function HomePage() {
           </div>
           <div className="card p-6 flex flex-col justify-between">
             <div>
-              <div className="font-mono text-sm mb-1">Insights</div>
+              <div className="font-mono text-sm mb-1">Correlations</div>
               <div className="text-ink-soft text-sm">
-                Which indicators actually move together, screened for real.
+                Compare any two indicators yourself, or browse what moves together.
               </div>
             </div>
-            <Link href="/insights" className="btn mt-4 inline-block w-fit no-underline">
-              See insights →
+            <Link href="/correlations" className="btn mt-4 inline-block w-fit no-underline">
+              Compare data →
             </Link>
           </div>
           <div className="card p-6 flex flex-col justify-between">

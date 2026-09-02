@@ -53,7 +53,7 @@ export default function LagCorrelationTool({ entities }: { entities: EntityOptio
       <p className="text-sm text-ink-soft mb-4">
         Pick one country and two indicators. This checks whether indicator A in one year lines up
         with indicator B a set number of years later — using that country&apos;s own history, live
-        from the World Bank, not the cross-country snapshot above.
+        from the World Bank.
       </p>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">

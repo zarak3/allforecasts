@@ -1,3 +1,5 @@
+import { EmailIcon, XIcon, InstagramIcon } from "@/components/SocialIcons";
+
 export const metadata = { title: "Contact — AllForecasts" };
 
 const LINKS = [
@@ -5,16 +7,19 @@ const LINKS = [
     label: "Email",
     value: "hello@allforecasts.com",
     href: "mailto:hello@allforecasts.com",
+    Icon: EmailIcon,
   },
   {
     label: "X",
     value: "@allforecast",
     href: "https://x.com/allforecast",
+    Icon: XIcon,
   },
   {
     label: "Instagram",
     value: "@allforecast",
     href: "https://instagram.com/allforecast",
+    Icon: InstagramIcon,
   },
 ];
 
@@ -53,7 +58,8 @@ export default function ContactPage() {
               rel={link.href.startsWith("http") ? "noopener noreferrer" : undefined}
               className="card p-6 flex items-center justify-between no-underline hover:opacity-80 transition"
             >
-              <span className="font-mono text-xs uppercase tracking-wide text-ink-soft">
+              <span className="font-mono text-xs uppercase tracking-wide text-ink-soft inline-flex items-center gap-2">
+                <link.Icon size={15} />
                 {link.label}
               </span>
               <span className="font-mono text-lg text-ink">{link.value}</span>

@@ -62,7 +62,7 @@ export interface LagCorrelationResult {
 // Pairs indicator A at year t with indicator B at year (t + lag) for one
 // country's own history, then runs Pearson on the pairs -- the actual
 // lag-correlation screen, not the cross-sectional one-point-in-time version
-// on the main insights table.
+// on the main correlations table.
 export function lagCorrelation(seriesA: YearSeries[], seriesB: YearSeries[], lag: number): LagCorrelationResult {
   const bByYear = new Map(seriesB.map((p) => [p.year, p.value]));
   const points: { year: number; a: number; b: number }[] = [];

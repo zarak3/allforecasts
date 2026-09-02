@@ -3,10 +3,11 @@ import { pearson } from "@/lib/stats";
 import { interpretPair } from "@/lib/insight-meaning";
 import { displayCountryName } from "@/lib/display-name";
 import LagCorrelationTool from "@/components/LagCorrelationTool";
+import PatternBrowser, { type PatternPair } from "@/components/PatternBrowser";
 import type { Entity } from "@/lib/types";
 
 export const revalidate = 3600;
-export const metadata = { title: "Insights — AllForecasts" };
+export const metadata = { title: "Correlations — AllForecasts" };
 
 interface IndicatorRow {
   entity_id: string;
@@ -89,28 +90,13 @@ async function computeCorrelations(): Promise<{ pairs: PairResult[]; entities: E
   }
 }
 
-function RBar({ r }: { r: number }) {
-  const pct = Math.round(Math.abs(r) * 100);
-  return (
-    <div className="flex items-center gap-2 w-full max-w-[160px]">
-      <div className="flex-1 h-1.5 bg-line rounded-full overflow-hidden">
-        <div
-          className={`h-full rounded-full ${r > 0 ? "bg-good" : "bg-warn"}`}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-      <span className={`font-mono text-xs shrink-0 ${r > 0 ? "text-good" : "text-warn"}`}>
-        {r > 0 ? "+" : ""}
-        {r.toFixed(2)}
-      </span>
-    </div>
-  );
-}
-
-export default async function InsightsPage() {
+export default async function CorrelationsPage() {
   const { pairs, entities, loadError } = await computeCorrelations();
   const crossCategory = pairs.filter((p) => p.categoryA !== p.categoryB);
-  const top = crossCategory.slice(0, 12);
+  const top: PatternPair[] = crossCategory.slice(0, 12).map((p) => {
+    const { meaning, personas } = interpretPair(p.a, p.categoryA, p.b, p.categoryB, p.r);
+    return { ...p, meaning, personas };
+  });
   const entityOptions = entities
     .filter((e) => e.code)
     .map((e) => ({ code: e.code as string, name: displayCountryName(e.code, e.name) }))
@@ -119,69 +105,23 @@ export default async function InsightsPage() {
   return (
     <main className="section pt-16">
       <div className="max-w-4xl mx-auto px-6">
-        <div className="eyebrow mb-3">Screening</div>
-        <h1 className="text-3xl font-medium mb-3">Insights</h1>
-        <p className="text-ink-soft max-w-2xl mb-4">
-          What actually moves together, across 217 countries. Built for a government sizing up
-          policy trade-offs, a business scouting a market, a city planner, or a person deciding
-          where to move — a starting point for what&apos;s worth digging into, not a finished
-          answer. All of it real, computed from public data, and shown as-is — nothing here is
-          smoothed over to make a stronger story than the numbers support.
+        <div className="eyebrow mb-3">Correlations</div>
+        <h1 className="text-3xl font-medium mb-3">Compare any two indicators</h1>
+        <p className="text-ink-soft max-w-2xl mb-8">
+          Pick a country and two indicators to see whether one tends to lead the other — built for
+          a government sizing up policy trade-offs, a business scouting a market, a city planner,
+          or a person deciding where to move. Real data, computed live, shown as-is.
         </p>
 
         {loadError ? (
-          <p className="font-mono text-sm text-warn">
-            Could not reach the database ({loadError}).
-          </p>
+          <p className="font-mono text-sm text-warn">Could not reach the database ({loadError}).</p>
         ) : (
           <>
-            <h2 className="section-title">Strongest relationships right now</h2>
-            <div className="flex flex-col gap-4 mb-10">
-              {top.map((p) => {
-                const { meaning, personas } = interpretPair(p.a, p.categoryA, p.b, p.categoryB, p.r);
-                return (
-                  <div key={`${p.a}|${p.b}`} className="card p-5">
-                    <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-                      <div className="text-sm">
-                        <span className="text-ink">{p.a}</span>
-                        <span className="text-ink-soft mx-1.5">↔</span>
-                        <span className="text-ink">{p.b}</span>
-                      </div>
-                      <RBar r={p.r} />
-                    </div>
-                    <p className="text-sm text-ink-soft mb-3">{meaning}</p>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {personas.map((persona) => (
-                        <span
-                          key={persona}
-                          className="font-mono text-[11px] uppercase tracking-wide px-2 py-1 rounded bg-accent/10 text-accent"
-                        >
-                          {persona}
-                        </span>
-                      ))}
-                      <span className="font-mono text-[11px] text-ink-soft ml-auto">
-                        {p.n} countries · {p.categoryA} × {p.categoryB}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <p className="font-mono text-xs text-ink-soft mb-14">
-              {pairs.length} pairs screened in total ({crossCategory.length} cross-category). r ranges
-              from -1 (perfectly opposite) to +1 (perfectly together); anything under ~0.3 in either
-              direction is weak. Some pairs are related by definition (GDP and GNI per capita
-              measure almost the same thing) rather than by real discovery — read the number, not
-              just the ranking.
-            </p>
-
-            <h2 className="section-title">Run your own comparison</h2>
-            <p className="text-ink-soft max-w-2xl mb-5 text-sm">
-              The table above compares every country at a single moment. This checks one
-              country&apos;s own history over time instead — does a change in one indicator show
-              up in another a few years later.
-            </p>
             <LagCorrelationTool entities={entityOptions} />
+
+            <div className="mt-8">
+              <PatternBrowser pairs={top} totalPairs={pairs.length} crossCategoryCount={crossCategory.length} />
+            </div>
           </>
         )}
       </div>
