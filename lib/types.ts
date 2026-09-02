@@ -30,4 +30,5 @@ export interface Prediction {
   resolves_at: string;
   outcome: string | null;
   outcome_correct: boolean | null;
+  entity?: Entity | null;
 }

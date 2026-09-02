@@ -12,14 +12,19 @@ function daysUntil(iso: string): number {
   return Math.ceil((target - now) / (1000 * 60 * 60 * 24));
 }
 
-export default function PredictionCard({ prediction }: { prediction: Prediction }) {
+export default function PredictionCard({ prediction, tag }: { prediction: Prediction; tag?: string }) {
   const resolved = prediction.outcome !== null;
   const days = resolved ? null : daysUntil(prediction.resolves_at);
 
   return (
     <div className="card p-6">
       <div className="flex items-start justify-between gap-3 mb-1">
-        <div className="font-mono text-sm text-ink-soft">{prediction.title}</div>
+        <div>
+          {tag && (
+            <div className="font-mono text-[10px] uppercase tracking-wide text-accent mb-1">{tag}</div>
+          )}
+          <div className="font-mono text-sm text-ink-soft">{prediction.title}</div>
+        </div>
         {resolved ? (
           <span
             className={`font-mono text-[11px] uppercase tracking-wide px-2 py-1 rounded shrink-0 ${
