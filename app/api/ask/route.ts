@@ -38,7 +38,8 @@ const TOOLS = [
     type: "function",
     function: {
       name: "lookup_country_data",
-      description: "Get all tracked indicators (GDP, debt, inflation, health, etc.) for one country.",
+      description:
+        "Get all tracked indicators (GDP, debt, inflation, health, etc.) for one country. Example: {\"country\": \"Pakistan\"} or {\"country\": \"PK\"}.",
       parameters: {
         type: "object",
         properties: {
@@ -52,7 +53,8 @@ const TOOLS = [
     type: "function",
     function: {
       name: "list_predictions",
-      description: "List AllForecasts' real published/pending predictions with their reasoning and resolution dates.",
+      description:
+        "List AllForecasts' real published/pending predictions with their reasoning and resolution dates. Takes no arguments -- call with {}.",
       parameters: { type: "object", properties: {} },
     },
   },
@@ -60,7 +62,8 @@ const TOOLS = [
     type: "function",
     function: {
       name: "top_correlations",
-      description: "Get the strongest real cross-sectional correlations between indicators, computed across all 217 countries.",
+      description:
+        "Get the strongest real cross-sectional correlations between indicators, computed across all 217 countries. Takes no arguments -- call with {}.",
       parameters: { type: "object", properties: {} },
     },
   },
@@ -68,7 +71,8 @@ const TOOLS = [
     type: "function",
     function: {
       name: "web_search",
-      description: "Search the live web for current information -- news, recent events, or anything that might have changed since training.",
+      description:
+        "Search the live web for current information -- news, recent events, or anything that might have changed since training. Example: {\"query\": \"UK inflation rate August 2026\"}.",
       parameters: {
         type: "object",
         properties: {
