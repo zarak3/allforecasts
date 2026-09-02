@@ -1,4 +1,4 @@
-import { supabaseServer } from "@/lib/supabase";
+import { supabaseServer, fetchAllRows } from "@/lib/supabase";
 import CountryExplorer from "@/components/CountryExplorer";
 import type { Indicator, Entity } from "@/lib/types";
 
@@ -8,19 +8,23 @@ export const metadata = { title: "Country data — AllForecasts" };
 async function getData(): Promise<{ indicators: Indicator[]; entities: Entity[]; loadError: string | null }> {
   try {
     const supabase = supabaseServer();
-    const [indicatorsRes, entitiesRes] = await Promise.all([
-      supabase
-        .from("indicators")
-        .select("id, name, category, source, value, unit, period, entity:entities!inner(id, type, name, code)")
-        .eq("entity.type", "country")
-        .order("name")
-        .range(0, 19999), // default PostgREST cap is 1000 rows -- we have 3000+
+    // PostgREST caps every response at ~1000 rows server-side regardless of
+    // the range requested -- we have 3000+ indicator rows, so this needs
+    // real pagination, not just a bigger .range().
+    const [indicators, entitiesRes] = await Promise.all([
+      fetchAllRows<Indicator>((from, to) =>
+        supabase
+          .from("indicators")
+          .select("id, name, category, source, value, unit, period, entity:entities!inner(id, type, name, code)")
+          .eq("entity.type", "country")
+          .order("name")
+          .range(from, to) as unknown as PromiseLike<{ data: Indicator[] | null; error: { message: string } | null }>
+      ),
       supabase.from("entities").select("id, type, name, code").eq("type", "country").order("name").range(0, 9999),
     ]);
-    if (indicatorsRes.error) throw new Error(indicatorsRes.error.message);
     if (entitiesRes.error) throw new Error(entitiesRes.error.message);
     return {
-      indicators: (indicatorsRes.data as unknown as Indicator[]) ?? [],
+      indicators,
       entities: (entitiesRes.data as Entity[]) ?? [],
       loadError: null,
     };

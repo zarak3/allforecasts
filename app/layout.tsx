@@ -3,6 +3,7 @@ import { Newsreader, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import AskWidget from "@/components/AskWidget";
 
 const newsreader = Newsreader({
   subsets: ["latin"],
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Header />
         {children}
         <Footer />
+        <AskWidget />
       </body>
     </html>
   );

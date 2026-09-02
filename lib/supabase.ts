@@ -22,3 +22,24 @@ export function supabaseServer() {
     { auth: { persistSession: false } }
   );
 }
+
+// PostgREST enforces its own server-side max-rows cap (Supabase's default
+// is 1000) regardless of the range you request -- `.range(0, 19999)` gets
+// silently clamped back down to 1000 rows rather than erroring. The only
+// reliable way past it is paginating in application code.
+export async function fetchAllRows<T>(
+  buildQuery: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>,
+  pageSize = 1000
+): Promise<T[]> {
+  const all: T[] = [];
+  let from = 0;
+  for (;;) {
+    const { data, error } = await buildQuery(from, from + pageSize - 1);
+    if (error) throw new Error(error.message);
+    const page = data ?? [];
+    all.push(...page);
+    if (page.length < pageSize) break;
+    from += pageSize;
+  }
+  return all;
+}

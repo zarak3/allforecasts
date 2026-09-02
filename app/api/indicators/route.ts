@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabase";
+import { supabaseServer, fetchAllRows } from "@/lib/supabase";
+import type { Indicator } from "@/lib/types";
 
 export const revalidate = 3600; // cache for 1 hour
 
@@ -9,20 +10,25 @@ export async function GET(req: NextRequest) {
   const entityType = searchParams.get("entity_type") ?? "country";
 
   const supabase = supabaseServer();
-  let query = supabase
-    .from("indicators")
-    .select("id, name, category, source, value, unit, period, entity:entities!inner(id, type, name, code)")
-    .eq("entity.type", entityType)
-    .order("name")
-    .range(0, 19999); // default PostgREST cap is 1000 rows -- we have 3000+
+  try {
+    // PostgREST caps every response at ~1000 rows server-side regardless of
+    // the range requested, so this paginates rather than relying on .range().
+    const data = await fetchAllRows<Indicator>((from, to) => {
+      let query = supabase
+        .from("indicators")
+        .select("id, name, category, source, value, unit, period, entity:entities!inner(id, type, name, code)")
+        .eq("entity.type", entityType)
+        .order("name")
+        .range(from, to);
+      if (category) query = query.eq("category", category);
+      return query as unknown as PromiseLike<{ data: Indicator[] | null; error: { message: string } | null }>;
+    });
 
-  if (category) query = query.eq("category", category);
-
-  const { data, error } = await query;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-  return NextResponse.json(
-    { data },
-    { headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400" } }
-  );
+    return NextResponse.json(
+      { data },
+      { headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400" } }
+    );
+  } catch (err) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+  }
 }

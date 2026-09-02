@@ -1,4 +1,4 @@
-import { supabaseServer } from "@/lib/supabase";
+import { supabaseServer, fetchAllRows } from "@/lib/supabase";
 import { pearson } from "@/lib/stats";
 
 export const revalidate = 3600;
@@ -23,17 +23,16 @@ interface PairResult {
 async function computeCorrelations(): Promise<{ pairs: PairResult[]; loadError: string | null }> {
   try {
     const supabase = supabaseServer();
-    // Supabase/PostgREST caps unpaginated selects at 1000 rows by default --
-    // with 16 indicators x 217 countries that silently truncated to ~6
-    // indicators worth of data. Explicit range covers real + near-future volume.
-    const { data, error } = await supabase
-      .from("indicators")
-      .select("entity_id, name, category, value, entity:entities!inner(type)")
-      .eq("entity.type", "country")
-      .range(0, 19999);
-    if (error) throw new Error(error.message);
-
-    const rows = (data ?? []) as unknown as IndicatorRow[];
+    // PostgREST caps every response at ~1000 rows server-side no matter what
+    // range is requested -- with 16 indicators x 217 countries that silently
+    // truncated to ~6 indicators worth of data. fetchAllRows pages past it.
+    const rows = await fetchAllRows<IndicatorRow>((from, to) =>
+      supabase
+        .from("indicators")
+        .select("entity_id, name, category, value, entity:entities!inner(type)")
+        .eq("entity.type", "country")
+        .range(from, to) as unknown as PromiseLike<{ data: IndicatorRow[] | null; error: { message: string } | null }>
+    );
 
     // name -> entity_id -> value (most recent World Bank pull is one row
     // per entity per indicator, so this is a clean 1:1 map)
