@@ -25,7 +25,7 @@ export default function ZenoPage() {
             {[
               { label: "Chat", detail: "Ask anything, in plain language" },
               { label: "Files", detail: "Attach a text file to discuss" },
-              { label: "General questions", detail: "Not just AllForecasts topics" },
+              { label: "Web search", detail: "Pulls in current information" },
               { label: "Live site data", detail: "Reads directly from AllForecasts" },
             ].map((f) => (
               <div key={f.label} className="card px-4 py-2.5">

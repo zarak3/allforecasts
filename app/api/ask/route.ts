@@ -7,11 +7,15 @@ export const maxDuration = 60;
 
 // Zeno: the "natural language interface" from the project's own vision --
 // an agentic loop where the model can call real tools against the live
-// database and read attached files, but never invents a site number
-// itself -- exactly the "stats compute, AI narrates" split the rest of the
-// site holds to. Runs on Groq's free tier (openai/gpt-oss-120b) --
-// unlike Gemini, Groq issues API keys with no credit card / billing
-// account required at all, which is what "free" actually means here.
+// database, search the live web, and read attached files, but never
+// invents a site number itself -- exactly the "stats compute, AI narrates"
+// split the rest of the site holds to. Runs on Groq's free tier
+// (openai/gpt-oss-120b) -- unlike Gemini, Groq issues API keys with no
+// credit card / billing account required at all, which is what "free"
+// actually means here. Web search runs on Tavily's free tier for the same
+// reason (no card, 1,000 searches/month) -- Gemini's built-in Google
+// Search grounding was ruled out earlier for billing per query even on
+// free-tier models.
 // Trade-off: openai/gpt-oss-120b is text-only, so image/PDF
 // attachments can't be read the way they could on the old Anthropic
 // version -- text-based files (.txt/.md/.csv/.json) still work fine.
@@ -22,7 +26,7 @@ You answer questions on any topic, directly and confidently, using your own know
 
 Ground rules:
 - For anything about a country's tracked indicators, AllForecasts' own predictions, or cross-indicator correlations: use the site tools (lookup_country_data, list_predictions, top_correlations). Never state a specific number for these unless it came from a tool call in this conversation.
-- You do not have live web search. For current-events questions the site's database doesn't cover, say so plainly rather than guessing -- don't invent a number or a recent event.
+- For current events, recent news, or anything that might have changed since your training: use web_search rather than guessing from memory. Cite what you found and note the date if it matters. If a search comes back thin or contradictory, say so instead of picking a confident-sounding answer.
 - If the user attached a text file, its contents appear inline in their message -- read and use it directly.
 - The site's real published predictions are hand-researched, cross-checked calls with real reasoning -- treat those as authoritative when asked about them.
 - The "GDP growth, next period (projected)" indicator (source: "AllForecasts model") is a naive statistical trend extrapolation, not a researched forecast -- say so if asked.
@@ -58,6 +62,20 @@ const TOOLS = [
       name: "top_correlations",
       description: "Get the strongest real cross-sectional correlations between indicators, computed across all 217 countries.",
       parameters: { type: "object", properties: {} },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "web_search",
+      description: "Search the live web for current information -- news, recent events, or anything that might have changed since training.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "The search query" },
+        },
+        required: ["query"],
+      },
     },
   },
 ] as const;
@@ -127,6 +145,26 @@ async function topCorrelations() {
   return { top_correlations: results.slice(0, 10) };
 }
 
+async function webSearch(query: string) {
+  const apiKey = process.env.TAVILY_API_KEY;
+  if (!apiKey) return { error: "Web search isn't configured -- missing TAVILY_API_KEY." };
+
+  const res = await fetch("https://api.tavily.com/search", {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({ query, max_results: 5, include_answer: "basic" }),
+  });
+  if (!res.ok) return { error: `Search failed: ${res.status} ${await res.text()}` };
+
+  const data = await res.json();
+  const results = (data.results ?? []).map((r: { title: string; url: string; content: string }) => ({
+    title: r.title,
+    url: r.url,
+    snippet: r.content,
+  }));
+  return { answer: data.answer ?? null, results };
+}
+
 async function runTool(name: string, input: Record<string, unknown>) {
   switch (name) {
     case "lookup_country_data":
@@ -135,6 +173,8 @@ async function runTool(name: string, input: Record<string, unknown>) {
       return listPredictions();
     case "top_correlations":
       return topCorrelations();
+    case "web_search":
+      return webSearch(String(input.query ?? ""));
     default:
       return { error: `Unknown tool ${name}` };
   }
