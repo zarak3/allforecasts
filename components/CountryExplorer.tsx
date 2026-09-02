@@ -5,6 +5,7 @@ import type { Indicator, Entity } from "@/lib/types";
 import CountryTable from "@/components/CountryTable";
 import WorldMap from "@/components/WorldMap";
 import SpinningGlobe from "@/components/SpinningGlobe";
+import { displayCountryName } from "@/lib/display-name";
 
 export default function CountryExplorer({
   indicators,
@@ -23,7 +24,9 @@ export default function CountryExplorer({
 
   const handleSelect = useCallback((code: string, name: string) => setSelected({ code, name }), []);
 
-  const sortedEntities = [...entities].sort((a, b) => a.name.localeCompare(b.name));
+  const sortedEntities = [...entities].sort((a, b) =>
+    displayCountryName(a.code, a.name).localeCompare(displayCountryName(b.code, b.name))
+  );
 
   return (
     <div>
@@ -49,13 +52,15 @@ export default function CountryExplorer({
           onChange={(e) => {
             const code = e.target.value;
             const entity = sortedEntities.find((c) => c.code === code);
-            setSelected(entity && entity.code ? { code: entity.code, name: entity.name } : null);
+            setSelected(
+              entity && entity.code ? { code: entity.code, name: displayCountryName(entity.code, entity.name) } : null
+            );
           }}
         >
           <option value="">Jump to country…</option>
           {sortedEntities.map((c) => (
             <option key={c.id} value={c.code ?? ""}>
-              {c.name}
+              {displayCountryName(c.code, c.name)}
             </option>
           ))}
         </select>

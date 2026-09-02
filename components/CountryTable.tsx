@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { Indicator } from "@/lib/types";
+import { displayCountryName } from "@/lib/display-name";
 
 // Hand-rolled compact formatting instead of Intl's `notation: "compact"`:
 // Node's and the browser's bundled ICU/CLDR data can render the same
@@ -106,7 +107,9 @@ export default function CountryTable({
           <tbody>
             {rows.map((row) => (
               <tr key={row.id}>
-                <td className="py-2.5 border-b border-line">{row.entity?.name}</td>
+                <td className="py-2.5 border-b border-line">
+                  {displayCountryName(row.entity?.code, row.entity?.name ?? "")}
+                </td>
                 <td className="py-2.5 border-b border-line">{row.name}</td>
                 <td className="py-2.5 border-b border-line font-mono">{formatValue(row.value, row.unit)}</td>
                 <td className="py-2.5 border-b border-line font-mono">
