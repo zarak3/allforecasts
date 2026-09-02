@@ -11,6 +11,18 @@ interface Interpretation {
   personas: Persona[];
 }
 
+// Indicators where a HIGHER value is a worse outcome. A strong correlation
+// between one of these and a normal "higher is better" indicator is
+// substantively good news (e.g. literacy up, infant mortality down) even
+// though the raw Pearson r is negative -- flip the sign before picking a
+// template so the interpretation reads the way the underlying story does.
+const BAD_OUTCOME_NAMES = new Set([
+  "Infant mortality rate",
+  "Unemployment rate",
+  "Government debt",
+  "Inflation, consumer prices (annual %)",
+]);
+
 const PAIR_TEMPLATES: Record<string, (positive: boolean) => Interpretation> = {
   "economic|health": (positive) => ({
     meaning: positive
@@ -60,10 +72,19 @@ const PAIR_TEMPLATES: Record<string, (positive: boolean) => Interpretation> = {
   }),
 };
 
-export function interpretPair(categoryA: string, categoryB: string, r: number): Interpretation {
+export function interpretPair(
+  nameA: string,
+  categoryA: string,
+  nameB: string,
+  categoryB: string,
+  r: number
+): Interpretation {
+  const flip = BAD_OUTCOME_NAMES.has(nameA) !== BAD_OUTCOME_NAMES.has(nameB);
+  const effectiveR = flip ? -r : r;
+
   const key = [categoryA, categoryB].sort().join("|");
   const template = PAIR_TEMPLATES[key];
-  if (template) return template(r > 0);
+  if (template) return template(effectiveR > 0);
   return {
     meaning: "A real cross-domain signal worth investigating further before drawing conclusions.",
     personas: ["Government"],

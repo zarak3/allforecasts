@@ -149,7 +149,7 @@ export default async function InsightsPage() {
             <h2 className="section-title">Strongest cross-category relationships</h2>
             <div className="flex flex-col gap-4 mb-8">
               {top.map((p) => {
-                const { meaning, personas } = interpretPair(p.categoryA, p.categoryB, p.r);
+                const { meaning, personas } = interpretPair(p.a, p.categoryA, p.b, p.categoryB, p.r);
                 return (
                   <div key={`${p.a}|${p.b}`} className="card p-5">
                     <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
