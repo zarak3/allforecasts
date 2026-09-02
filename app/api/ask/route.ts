@@ -9,10 +9,10 @@ export const maxDuration = 60;
 // an agentic loop where the model can call real tools against the live
 // database and read attached files, but never invents a site number
 // itself -- exactly the "stats compute, AI narrates" split the rest of the
-// site holds to. Runs on Groq's free tier (llama-3.3-70b-versatile) --
+// site holds to. Runs on Groq's free tier (openai/gpt-oss-120b) --
 // unlike Gemini, Groq issues API keys with no credit card / billing
 // account required at all, which is what "free" actually means here.
-// Trade-off: llama-3.3-70b-versatile is text-only, so image/PDF
+// Trade-off: openai/gpt-oss-120b is text-only, so image/PDF
 // attachments can't be read the way they could on the old Anthropic
 // version -- text-based files (.txt/.md/.csv/.json) still work fine.
 
@@ -25,7 +25,7 @@ Ground rules:
 - The site's real published predictions are hand-researched, cross-checked calls with real reasoning -- treat those as authoritative when asked about them.
 - The "GDP growth, next period (projected)" indicator (source: "AllForecasts model") is a naive statistical trend extrapolation, not a researched forecast -- say so if asked.
 - Correlations from the top_correlations tool are cross-sectional (across countries, right now) -- correlation, not causation, and not the lag/Granger-causality method the real predictions use.
-- Keep answers short, plain-language, and warm but professional. This is a public-facing assistant, not a terminal.`;
+- Get to the point. Lead with the answer, not a preamble -- no "Great question!", no restating what was asked, no hedging before you say the thing. Still friendly in tone, but this is a professional assistant, not a chatty one: skip filler, keep it tight, and let plain confidence do the work instead of enthusiasm.`;
 
 const TOOLS = [
   {
@@ -211,7 +211,7 @@ export async function POST(req: NextRequest) {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        model: "openai/gpt-oss-120b",
         messages,
         tools: TOOLS,
         max_tokens: 1500,
