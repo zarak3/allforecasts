@@ -8,7 +8,11 @@ import PatternBrowser, { type PatternPair } from "@/components/PatternBrowser";
 import type { Entity } from "@/lib/types";
 
 export const revalidate = 3600;
-export const metadata = { title: "Correlations — AllForecasts" };
+export const metadata = {
+  title: "Correlations — AllForecasts",
+  description:
+    "Find genuine lead-lag relationships between economic and social indicators. Run a live country-level correlation calculator or project one indicator forward, built on real World Bank history.",
+};
 
 interface IndicatorRow {
   entity_id: string;

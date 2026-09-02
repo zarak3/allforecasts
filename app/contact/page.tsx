@@ -1,6 +1,9 @@
 import { EmailIcon, XIcon, InstagramIcon } from "@/components/SocialIcons";
 
-export const metadata = { title: "Contact — AllForecasts" };
+export const metadata = {
+  title: "Contact — AllForecasts",
+  description: "Get in touch with AllForecasts — email, X, and Instagram.",
+};
 
 const LINKS = [
   {

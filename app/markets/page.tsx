@@ -1,6 +1,9 @@
 import MarketsExplorer from "@/components/MarketsExplorer";
 
-export const metadata = { title: "Markets — AllForecasts" };
+export const metadata = {
+  title: "Markets — AllForecasts",
+  description: "Live, interactive charts for gold, silver, oil, copper, natural gas, and every major world currency.",
+};
 
 export default function MarketsPage() {
   return (

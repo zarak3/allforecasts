@@ -3,7 +3,11 @@ import CountryExplorer from "@/components/CountryExplorer";
 import type { Indicator, Entity } from "@/lib/types";
 
 export const revalidate = 3600;
-export const metadata = { title: "Country data — AllForecasts" };
+export const metadata = {
+  title: "Country data — AllForecasts",
+  description:
+    "Real GDP, inflation, health, education, and defence data for every country, sourced live from the World Bank — browse or compare indicators side by side.",
+};
 
 async function getData(): Promise<{ indicators: Indicator[]; entities: Entity[]; loadError: string | null }> {
   try {

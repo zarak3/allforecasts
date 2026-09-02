@@ -1,7 +1,11 @@
 import ZenoChat from "@/components/ZenoChat";
 import ZenoLogo from "@/components/ZenoLogo";
 
-export const metadata = { title: "Zeno — AllForecasts" };
+export const metadata = {
+  title: "Zeno — AllForecasts",
+  description:
+    "Ask Zeno, AllForecasts' AI assistant, about any prediction, indicator, or correlation on the site — grounded in real data, not invented numbers.",
+};
 
 export default function ZenoPage() {
   return (

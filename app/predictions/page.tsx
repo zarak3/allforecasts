@@ -4,7 +4,11 @@ import { displayCountryName } from "@/lib/display-name";
 import type { Prediction } from "@/lib/types";
 
 export const revalidate = 900;
-export const metadata = { title: "Predictions — AllForecasts" };
+export const metadata = {
+  title: "Predictions — AllForecasts",
+  description:
+    "Every dated, falsifiable forecast AllForecasts has published, with the reasoning behind each call and its resolution once the official data lands.",
+};
 
 async function getPredictions(): Promise<{ predictions: Prediction[]; loadError: string | null }> {
   try {
