@@ -93,9 +93,14 @@ export default function PredictionCard({ prediction, tag }: { prediction: Predic
       )}
 
       {prediction.published_at && (
-        <a href={`/predictions/${prediction.id}/note`} className="font-mono text-[11px] text-accent mt-3 inline-block">
-          Export as research note →
-        </a>
+        <div className="flex gap-4 mt-3">
+          <a href={`/predictions/${prediction.id}/note`} className="font-mono text-[11px] text-accent inline-block">
+            Export as research note →
+          </a>
+          <a href={`/embed/predictions/${prediction.id}`} className="font-mono text-[11px] text-accent inline-block">
+            Embed this call →
+          </a>
+        </div>
       )}
     </div>
   );

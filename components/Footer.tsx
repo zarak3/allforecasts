@@ -1,6 +1,12 @@
+"use client";
+
+import { usePathname } from "next/navigation";
 import { EmailIcon, XIcon, InstagramIcon } from "@/components/SocialIcons";
 
 export default function Footer() {
+  const pathname = usePathname();
+  if (pathname?.startsWith("/embed")) return null;
+
   return (
     <footer className="print:hidden border-t border-line py-10 font-mono text-xs text-ink-soft">
       <div className="max-w-4xl mx-auto px-6">

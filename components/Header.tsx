@@ -1,6 +1,12 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export default function Header() {
+  const pathname = usePathname();
+  if (pathname?.startsWith("/embed")) return null;
+
   return (
     <header className="print:hidden border-b border-line py-5">
       <div className="max-w-4xl mx-auto px-6 flex items-baseline justify-between flex-wrap gap-2">

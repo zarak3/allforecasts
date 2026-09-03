@@ -10,7 +10,7 @@ import ZenoLogo from "@/components/ZenoLogo";
 // page itself, since linking to the page you're already on is pointless.
 export default function AskWidget() {
   const pathname = usePathname();
-  if (pathname === "/zeno") return null;
+  if (pathname === "/zeno" || pathname?.startsWith("/embed")) return null;
 
   return (
     <Link
