@@ -9,7 +9,7 @@ export const maxDuration = 60;
 // an agentic loop where the model can call real tools against the live
 // database, search the live web, and read attached files, but never
 // invents a site number itself -- exactly the "stats compute, AI narrates"
-// split the rest of the site holds to. Runs on Gemini (gemini-3.8-flash)
+// split the rest of the site holds to. Runs on Gemini (gemini-3.6-flash)
 // via the classic generateContent REST endpoint -- genuinely free within
 // the free-tier quota once the Google Cloud project is verified (a card
 // on file for identity verification, not a per-use charge). Deliberately
@@ -239,7 +239,7 @@ export async function POST(req: NextRequest) {
 
   for (let round = 0; round < 5; round++) {
     const res = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent",
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent",
       {
         method: "POST",
         headers: { "content-type": "application/json", "x-goog-api-key": apiKey },

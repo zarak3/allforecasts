@@ -24,7 +24,7 @@ ${JSON.stringify(payload, null, 2)}
 
 Write a short weekly digest (resolved predictions this week, new alerts this week, current calibration snapshot). Plain text, no markdown headers, suitable as an email body.`;
 
-  const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent", {
+  const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent", {
     method: "POST",
     headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
     body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] }),
