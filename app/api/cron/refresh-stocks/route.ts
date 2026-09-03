@@ -41,10 +41,35 @@ export async function GET(req: NextRequest) {
   const entityIdByCode: Record<string, string> = {};
   for (const e of entities) entityIdByCode[e.code as string] = e.id;
 
+  // Default behaviour (and what the daily cron always does): refresh every
+  // symbol. skipExisting=1 is an opt-in for backfilling a rate-limited run
+  // -- retriggers only symbols that don't have any stored rows yet, so
+  // repeated manual calls don't redo (and re-risk) ones that already
+  // succeeded.
+  const url = new URL(req.url);
+  const skipExisting = url.searchParams.get("skipExisting") === "1";
+  const alreadyHasData = new Set<string>();
+  if (skipExisting) {
+    const { data: existingCounts } = await supabase
+      .from("indicators")
+      .select("source_code")
+      .eq("name", "Stock price (close)")
+      .eq("source", "Alpha Vantage");
+    for (const r of existingCounts ?? []) alreadyHasData.add(r.source_code as string);
+  }
+
   let inserted = 0;
-  for (const stock of TRACKED_STOCKS) {
+  for (let idx = 0; idx < TRACKED_STOCKS.length; idx++) {
+    const stock = TRACKED_STOCKS[idx];
     const entityId = entityIdByCode[stock.symbol];
     if (!entityId) continue;
+    if (skipExisting && alreadyHasData.has(stock.symbol)) {
+      continue;
+    }
+    // Real per-symbol calls, spaced out -- firing all 8 back-to-back with
+    // no gap tripped Alpha Vantage's burst limit even though the daily
+    // quota (25) wasn't close to used.
+    if (idx > 0) await new Promise((r) => setTimeout(r, 3000));
     try {
       const closes = await fetchDailyCloses(stock.symbol, apiKey);
 
