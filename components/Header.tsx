@@ -23,6 +23,9 @@ export default function Header() {
           <Link href="/countries" className="font-mono text-sm text-ink-soft no-underline hover:text-accent">
             Countries
           </Link>
+          <Link href="/compare" className="font-mono text-sm text-ink-soft no-underline hover:text-accent">
+            Compare
+          </Link>
           <Link href="/correlations" prefetch={false} className="font-mono text-sm text-ink-soft no-underline hover:text-accent">
             Correlations
           </Link>

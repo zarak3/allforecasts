@@ -74,9 +74,15 @@ export default async function BacktestPage() {
       <div className="max-w-4xl mx-auto px-6">
         <div className="eyebrow mb-3">Would this have worked?</div>
         <h1 className="text-3xl font-medium mb-3">Backtest</h1>
-        <p className="text-ink-soft max-w-xl mb-8">
+        <p className="text-ink-soft max-w-xl mb-3">
           Anyone can claim a model works. This shows what it would have said before the outcome
           was known, using data the model never got to see in advance — hits and misses both.
+        </p>
+        <p className="font-mono text-xs text-ink-soft mb-8">
+          Prefer a narrative read? See three of these as{" "}
+          <a href="/case-studies" className="text-accent">
+            strategy memos →
+          </a>
         </p>
 
         {loadError ? (
