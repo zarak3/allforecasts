@@ -67,6 +67,7 @@ async function listPredictions() {
   const { data } = await supabase
     .from("predictions")
     .select("title, call, reasoning, resolves_at, published_at, outcome")
+    .eq("is_backtest", false)
     .order("resolves_at");
   return { predictions: data ?? [] };
 }
