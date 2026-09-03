@@ -181,7 +181,7 @@ interface GeminiPart {
 }
 
 interface GeminiContent {
-  role: "user" | "model" | "function";
+  role: "user" | "model";
   parts: GeminiPart[];
 }
 
@@ -268,7 +268,9 @@ export async function POST(req: NextRequest) {
       const output = await runTool(call.functionCall!.name, call.functionCall!.args ?? {});
       responseParts.push({ functionResponse: { name: call.functionCall!.name, response: output as Record<string, unknown> } });
     }
-    contents.push({ role: "function", parts: responseParts });
+    // Google's own API error confirmed "function" isn't a valid role --
+    // function results go back as role "user", same as the docs example.
+    contents.push({ role: "user", parts: responseParts });
   }
 
   return NextResponse.json({ error: "Ran out of tool-call rounds without a final answer." }, { status: 500 });
