@@ -9,16 +9,17 @@ export const maxDuration = 60;
 // an agentic loop where the model can call real tools against the live
 // database, search the live web, and read attached files, but never
 // invents a site number itself -- exactly the "stats compute, AI narrates"
-// split the rest of the site holds to. Runs on Groq's free tier
-// (openai/gpt-oss-120b) -- unlike Gemini, Groq issues API keys with no
-// credit card / billing account required at all, which is what "free"
-// actually means here. Web search runs on Tavily's free tier for the same
-// reason (no card, 1,000 searches/month) -- Gemini's built-in Google
-// Search grounding was ruled out earlier for billing per query even on
-// free-tier models.
-// Trade-off: openai/gpt-oss-120b is text-only, so image/PDF
-// attachments can't be read the way they could on the old Anthropic
-// version -- text-based files (.txt/.md/.csv/.json) still work fine.
+// split the rest of the site holds to. Runs on Gemini (gemini-3.8-flash)
+// via the classic generateContent REST endpoint -- genuinely free within
+// the free-tier quota once the Google Cloud project is verified (a card
+// on file for identity verification, not a per-use charge). Deliberately
+// NOT using Gemini's built-in Google Search grounding tool -- that's
+// billed per query even on free-tier models, a real ongoing cost, unlike
+// the one-time verification. Web search stays on Tavily's free tier
+// (no card, 1,000 searches/month) for exactly that reason.
+// Trade-off: kept text-only for attachments (matches the prior Groq
+// setup) -- Gemini can do images/PDF, but that's a separate upgrade, not
+// part of this swap.
 
 const SYSTEM_PROMPT = `You are Zeno, the AllForecasts assistant. AllForecasts is a cross-domain forecasting site: it pulls public data (currently World Bank indicators across 217 countries -- GDP, debt, inflation, unemployment, oil/resource rents, health, education, population), screens for genuine statistical relationships, and publishes dated, falsifiable predictions. You can read text files a user attaches (not images or PDFs -- say so if one comes through unreadable).
 
@@ -33,53 +34,41 @@ Ground rules:
 - Correlations from the top_correlations tool are cross-sectional (across countries, right now) -- correlation, not causation, and not the lag-correlation method (Pearson r across time lags) the real predictions use.
 - Get to the point. Lead with the answer, not a preamble -- no "Great question!", no restating what was asked, no hedging before you say the thing. Still friendly in tone, but this is a professional assistant, not a chatty one: skip filler, keep it tight, and let plain confidence do the work instead of enthusiasm.`;
 
-const TOOLS = [
+const FUNCTION_DECLARATIONS = [
   {
-    type: "function",
-    function: {
-      name: "lookup_country_data",
-      description:
-        "Get all tracked indicators (GDP, debt, inflation, health, etc.) for one country. Example: {\"country\": \"Pakistan\"} or {\"country\": \"PK\"}.",
-      parameters: {
-        type: "object",
-        properties: {
-          country: { type: "string", description: "Country name or ISO2 code, e.g. 'Pakistan' or 'PK'" },
-        },
-        required: ["country"],
+    name: "lookup_country_data",
+    description:
+      'Get all tracked indicators (GDP, debt, inflation, health, etc.) for one country. Example: {"country": "Pakistan"} or {"country": "PK"}.',
+    parameters: {
+      type: "object",
+      properties: {
+        country: { type: "string", description: "Country name or ISO2 code, e.g. 'Pakistan' or 'PK'" },
       },
+      required: ["country"],
     },
   },
   {
-    type: "function",
-    function: {
-      name: "list_predictions",
-      description:
-        "List AllForecasts' real published/pending predictions with their reasoning and resolution dates. Takes no arguments -- call with {}.",
-      parameters: { type: "object", properties: {} },
-    },
+    name: "list_predictions",
+    description:
+      "List AllForecasts' real published/pending predictions with their reasoning and resolution dates. Takes no arguments -- call with {}.",
+    parameters: { type: "object", properties: {} },
   },
   {
-    type: "function",
-    function: {
-      name: "top_correlations",
-      description:
-        "Get the strongest real cross-sectional correlations between indicators, computed across all 217 countries. Takes no arguments -- call with {}.",
-      parameters: { type: "object", properties: {} },
-    },
+    name: "top_correlations",
+    description:
+      "Get the strongest real cross-sectional correlations between indicators, computed across all 217 countries. Takes no arguments -- call with {}.",
+    parameters: { type: "object", properties: {} },
   },
   {
-    type: "function",
-    function: {
-      name: "web_search",
-      description:
-        "Search the live web for current information -- news, recent events, or anything that might have changed since training. Example: {\"query\": \"UK inflation rate August 2026\"}.",
-      parameters: {
-        type: "object",
-        properties: {
-          query: { type: "string", description: "The search query" },
-        },
-        required: ["query"],
+    name: "web_search",
+    description:
+      'Search the live web for current information -- news, recent events, or anything that might have changed since training. Example: {"query": "UK inflation rate August 2026"}.',
+    parameters: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "The search query" },
       },
+      required: ["query"],
     },
   },
 ] as const;
@@ -184,18 +173,15 @@ async function runTool(name: string, input: Record<string, unknown>) {
   }
 }
 
-interface ToolCall {
-  id: string;
-  type: "function";
-  function: { name: string; arguments: string };
+interface GeminiPart {
+  text?: string;
+  functionCall?: { name: string; args?: Record<string, unknown> };
+  functionResponse?: { name: string; response: Record<string, unknown> };
 }
 
-interface ChatMessage {
-  role: "system" | "user" | "assistant" | "tool";
-  content: string | null;
-  tool_calls?: ToolCall[];
-  tool_call_id?: string;
-  name?: string;
+interface GeminiContent {
+  role: "user" | "model" | "function";
+  parts: GeminiPart[];
 }
 
 interface ClientMessage {
@@ -218,10 +204,10 @@ function decodeBase64Text(data: string): string {
 }
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.GROQ_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
-      { error: "Zeno isn't switched on yet -- the site is still waiting on a Groq API key." },
+      { error: "Zeno isn't switched on yet -- the site is still waiting on a Gemini API key." },
       { status: 503 }
     );
   }
@@ -234,12 +220,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing a user message" }, { status: 400 });
   }
 
-  const messages: ChatMessage[] = [{ role: "system", content: SYSTEM_PROMPT }];
-  clientMessages.forEach((m, i) => {
+  const contents: GeminiContent[] = clientMessages.map((m, i) => {
     const isLast = i === clientMessages.length - 1;
+    const role = m.role === "assistant" ? "model" : "user";
     if (!isLast || attachments.length === 0) {
-      messages.push({ role: m.role, content: m.text.slice(0, 4000) });
-      return;
+      return { role, parts: [{ text: m.text.slice(0, 4000) }] };
     }
     let text = m.text.slice(0, 4000);
     for (const att of attachments) {
@@ -249,49 +234,48 @@ export async function POST(req: NextRequest) {
         text += `\n\n[Attached file: ${att.name}]\n\n${decodeBase64Text(att.data)}`;
       }
     }
-    messages.push({ role: m.role, content: text });
+    return { role, parts: [{ text }] };
   });
 
   for (let round = 0; round < 5; round++) {
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model: "openai/gpt-oss-120b",
-        messages,
-        tools: TOOLS,
-        max_tokens: 1500,
-      }),
-    });
+    const res = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          tools: [{ function_declarations: FUNCTION_DECLARATIONS }],
+          contents,
+        }),
+      }
+    );
 
     if (!res.ok) {
       const errBody = await res.text();
-      return NextResponse.json({ error: `Groq API error: ${res.status} ${errBody}` }, { status: 502 });
+      return NextResponse.json({ error: `Gemini API error: ${res.status} ${errBody}` }, { status: 502 });
     }
 
     const result = await res.json();
-    const message = result.choices?.[0]?.message;
-    if (!message) {
-      return NextResponse.json({ error: "Groq returned no message" }, { status: 502 });
-    }
-    messages.push({ role: "assistant", content: message.content ?? null, tool_calls: message.tool_calls });
+    const candidate = result.candidates?.[0];
+    const parts: GeminiPart[] = candidate?.content?.parts ?? [];
+    contents.push({ role: "model", parts });
 
-    const toolCalls: ToolCall[] = message.tool_calls ?? [];
-    if (toolCalls.length === 0) {
-      return NextResponse.json({ answer: message.content || "Zeno didn't return a text answer -- try rephrasing." });
+    const functionCalls = parts.filter((p) => p.functionCall);
+    if (functionCalls.length === 0) {
+      const text = parts
+        .filter((p) => p.text)
+        .map((p) => p.text)
+        .join("\n");
+      return NextResponse.json({ answer: text || "Zeno didn't return a text answer -- try rephrasing." });
     }
 
-    for (const call of toolCalls) {
-      let args: Record<string, unknown> = {};
-      try {
-        args = JSON.parse(call.function.arguments || "{}");
-      } catch {
-        // malformed arguments -- fall through with an empty object, the
-        // tool itself will report back what's missing
-      }
-      const output = await runTool(call.function.name, args);
-      messages.push({ role: "tool", tool_call_id: call.id, name: call.function.name, content: JSON.stringify(output) });
+    const responseParts: GeminiPart[] = [];
+    for (const call of functionCalls) {
+      const output = await runTool(call.functionCall!.name, call.functionCall!.args ?? {});
+      responseParts.push({ functionResponse: { name: call.functionCall!.name, response: output as Record<string, unknown> } });
     }
+    contents.push({ role: "function", parts: responseParts });
   }
 
   return NextResponse.json({ error: "Ran out of tool-call rounds without a final answer." }, { status: 500 });
