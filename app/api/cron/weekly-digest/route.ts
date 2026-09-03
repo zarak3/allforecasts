@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
 import { brierScore, reliabilityBuckets } from "@/lib/stats";
 import { callGemini } from "@/lib/gemini";
-import { sendEmail } from "@/lib/email";
+import { sendEmail, buildDigestHtml } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -140,7 +140,7 @@ export async function GET(req: NextRequest) {
   let emailError: string | null = null;
   if (resendKey && recipient) {
     try {
-      await sendEmail(resendKey, recipient, "AllForecasts — weekly digest", digest);
+      await sendEmail(resendKey, recipient, "AllForecasts — weekly digest", digest, buildDigestHtml(digest));
       emailed = true;
     } catch (err) {
       emailError = err instanceof Error ? err.message : String(err);
