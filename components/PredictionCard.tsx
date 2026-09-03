@@ -13,7 +13,10 @@ function daysUntil(iso: string): number {
 }
 
 export default function PredictionCard({ prediction, tag }: { prediction: Prediction; tag?: string }) {
-  const resolved = prediction.outcome !== null;
+  // status field is the source of truth once populated; older rows fall
+  // back to the outcome/outcome_correct pair they already had.
+  const status = prediction.status ?? (prediction.outcome !== null ? (prediction.outcome_correct ? "confirmed" : "missed") : "pending");
+  const resolved = status !== "pending";
   const days = resolved ? null : daysUntil(prediction.resolves_at);
 
   return (
@@ -25,17 +28,17 @@ export default function PredictionCard({ prediction, tag }: { prediction: Predic
           )}
           <div className="font-mono text-sm text-ink-soft">{prediction.title}</div>
         </div>
-        {resolved ? (
-          <span
-            className={`font-mono text-[11px] uppercase tracking-wide px-2 py-1 rounded shrink-0 ${
-              prediction.outcome_correct ? "bg-good/10 text-good" : "bg-warn/10 text-warn"
-            }`}
-          >
-            {prediction.outcome_correct ? "✓ Correct" : "✗ Missed"}
+        {status === "confirmed" ? (
+          <span className="font-mono text-[11px] uppercase tracking-wide px-2 py-1 rounded shrink-0 bg-good/10 text-good">
+            🟢 Confirmed
+          </span>
+        ) : status === "missed" ? (
+          <span className="font-mono text-[11px] uppercase tracking-wide px-2 py-1 rounded shrink-0 bg-warn/10 text-warn">
+            🔴 Missed
           </span>
         ) : (
           <span className="font-mono text-[11px] uppercase tracking-wide px-2 py-1 rounded shrink-0 bg-accent/10 text-accent">
-            {days !== null && days >= 0 ? `Resolves in ${days}d` : "Pending"}
+            🟡 {days !== null && days >= 0 ? `Pending — resolves in ${days}d` : "Pending"}
           </span>
         )}
       </div>
@@ -45,6 +48,11 @@ export default function PredictionCard({ prediction, tag }: { prediction: Predic
       </div>
 
       <div className="font-mono text-xs text-ink-soft flex gap-4 flex-wrap mb-1">
+        {prediction.confidence_pct !== null && (
+          <span>
+            Confidence: <b className="text-ink">{prediction.confidence_pct}%</b>
+          </span>
+        )}
         <span>
           Resolves: <b className="text-ink">{formatDate(prediction.resolves_at)}</b>
         </span>
@@ -54,7 +62,14 @@ export default function PredictionCard({ prediction, tag }: { prediction: Predic
         </span>
       </div>
 
-      {resolved && (
+      {prediction.signal_summary && (
+        <p className="text-sm text-ink-soft mt-3">
+          <span className="font-mono text-xs text-accent">The signal — </span>
+          {prediction.signal_summary}
+        </p>
+      )}
+
+      {resolved && prediction.outcome && (
         <p className="text-sm text-ink-soft mt-2">
           Outcome: <b className="text-ink">{prediction.outcome}</b>
         </p>
@@ -68,6 +83,13 @@ export default function PredictionCard({ prediction, tag }: { prediction: Predic
           </summary>
           <p className="text-sm text-ink-soft whitespace-pre-line mt-2">{prediction.reasoning}</p>
         </details>
+      )}
+
+      {prediction.falsification_condition && (
+        <p className="font-mono text-[11px] text-ink-soft mt-3 pt-3 border-t border-line">
+          <span className="text-accent">What would prove this wrong — </span>
+          {prediction.falsification_condition}
+        </p>
       )}
     </div>
   );

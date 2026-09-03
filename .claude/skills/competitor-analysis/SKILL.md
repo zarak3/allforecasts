@@ -86,8 +86,11 @@ you produce in conversation is the entire deliverable.
    proposing anything, read the `project_allforecasts` memory file (and
    `project_allforecasts_predictions` if relevant) at
    `/Users/zarak/.claude/projects/-Users-zarak-claude/memory/` to pull
-   AllForecasts' actual settled architecture: Granger-causality/lag-correlation
-   screening (not raw correlation), a small fixed 3–5 indicator cross-check
+   AllForecasts' actual settled architecture: lag-correlation screening
+   (Pearson r across time lags, not raw cross-sectional correlation --
+   Granger causality is named in early vision docs but isn't implemented
+   anywhere in the code, so don't describe it as a current capability), a
+   small fixed 3–5 indicator cross-check
    set, the four-layer AI division (Statistics forecasts, ML screens
    candidates, LLM narrates only, NL interface translates queries), and the
    four-view model (Country/City/Business/Person). Use what's actually there,

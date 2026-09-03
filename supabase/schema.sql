@@ -37,17 +37,79 @@ create table if not exists predictions (
   resolves_at date not null,
   outcome text,                 -- filled in after resolution
   outcome_correct boolean,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+
+  -- Structured fields for the Notable Calls / Backtest template. All
+  -- nullable -- older rows keep working with just call/reasoning, these
+  -- fill in as each call gets the fuller write-up.
+  confidence_pct numeric,              -- e.g. 65 for "65% confident"
+  signal_summary text,                 -- "The signal": which indicator(s) moved, and by how much
+  falsification_condition text,        -- "What would prove this wrong" -- mandatory in spirit, nullable in schema for backward compat
+  status text check (status in ('pending', 'confirmed', 'missed')),
+  resolved_at timestamptz,             -- when the outcome was actually confirmed, distinct from resolves_at (when it was due)
+  related_relationship_ids uuid[]      -- links to relationships table once a call cites a specific discovered lag relationship
 );
+
+-- Real lead-lag relationships discovered between two indicators. Starts
+-- empty -- populated only as real relationships are actually found and
+-- validated, never backfilled with placeholder rows.
+create table if not exists relationships (
+  id uuid primary key default gen_random_uuid(),
+  indicator_a_name text not null,
+  indicator_b_name text not null,
+  lag_period text,                     -- e.g. '6 weeks', '1 quarter'
+  correlation_strength numeric,        -- Pearson r from lib/stats.ts -- the method actually implemented
+  granger_p_value numeric,             -- reserved for a real Granger causality test; null until that's actually built, never faked
+  discovered_at timestamptz not null default now(),
+  status text not null default 'active' check (status in ('active', 'invalidated'))
+);
+
+-- Anomaly/event/surprise alerts. Starts empty -- Phase 3 builds the engine
+-- that writes to this; Phase 1 only creates the table so nothing has to
+-- be migrated later.
+create table if not exists alerts (
+  id uuid primary key default gen_random_uuid(),
+  type text not null check (type in ('anomaly', 'event', 'surprise')),
+  entity_id uuid references entities(id),
+  indicator_id uuid references indicators(id),
+  triggered_at timestamptz not null default now(),
+  z_score numeric,
+  description text,
+  linked_prediction_id uuid references predictions(id)
+);
+
+-- Consensus vs. actual, for the Benchmark/Surprise Index features. Starts
+-- empty -- Phase 2 populates this only where a real public consensus
+-- figure (Reuters/Bloomberg/ONS/IMF) exists for a given prediction.
+create table if not exists consensus_benchmarks (
+  id uuid primary key default gen_random_uuid(),
+  entity_id uuid references entities(id),
+  indicator_name text not null,
+  release_date date,
+  consensus_value numeric,
+  our_prediction_id uuid references predictions(id),
+  actual_value numeric
+);
+
+create index if not exists relationships_status_idx on relationships (status);
+create index if not exists alerts_entity_idx on alerts (entity_id);
+create index if not exists alerts_type_idx on alerts (type);
+create index if not exists consensus_benchmarks_prediction_idx on consensus_benchmarks (our_prediction_id);
 
 -- Row Level Security: public read-only access, writes only via service_role key
 alter table entities enable row level security;
 alter table indicators enable row level security;
 alter table predictions enable row level security;
+alter table relationships enable row level security;
+alter table alerts enable row level security;
+alter table consensus_benchmarks enable row level security;
 
 create policy "public read entities" on entities for select using (true);
 create policy "public read indicators" on indicators for select using (true);
 create policy "public read predictions" on predictions for select using (true);
+create policy "public read relationships" on relationships for select using (true);
+create policy "public read alerts" on alerts for select using (true);
+create policy "public read consensus_benchmarks" on consensus_benchmarks for select using (true);
 
 -- No insert/update/delete policies are created for the anon/public role,
 -- so writes only work via the service_role key (used server-side in app/api/cron/refresh-indicators).

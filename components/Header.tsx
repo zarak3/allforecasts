@@ -11,6 +11,9 @@ export default function Header() {
           <Link href="/predictions" className="font-mono text-sm text-ink-soft no-underline hover:text-accent">
             Predictions
           </Link>
+          <Link href="/backtest" className="font-mono text-sm text-ink-soft no-underline hover:text-accent">
+            Backtest
+          </Link>
           <Link href="/countries" className="font-mono text-sm text-ink-soft no-underline hover:text-accent">
             Countries
           </Link>

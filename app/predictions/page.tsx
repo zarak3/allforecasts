@@ -24,12 +24,16 @@ async function getPredictions(): Promise<{ predictions: Prediction[]; loadError:
   }
 }
 
+function resolveStatus(p: Prediction) {
+  return p.status ?? (p.outcome !== null ? (p.outcome_correct ? "confirmed" : "missed") : "pending");
+}
+
 export default async function PredictionsPage() {
   const { predictions, loadError } = await getPredictions();
 
-  const pending = predictions.filter((p) => p.outcome === null);
-  const resolved = predictions.filter((p) => p.outcome !== null);
-  const correct = resolved.filter((p) => p.outcome_correct).length;
+  const pending = predictions.filter((p) => resolveStatus(p) === "pending");
+  const resolved = predictions.filter((p) => resolveStatus(p) !== "pending");
+  const correct = resolved.filter((p) => resolveStatus(p) === "confirmed").length;
 
   return (
     <main className="section pt-16">
@@ -40,10 +44,15 @@ export default async function PredictionsPage() {
           Every dated, falsifiable call, published before the outcome was known, and its
           resolution once the official data lands.
         </p>
-        <p className="font-mono text-xs text-ink-soft max-w-xl mb-8">
+        <p className="font-mono text-xs text-ink-soft max-w-xl mb-4">
           Each one names its resolution source and date up front — no moving the goalposts
           after the fact.
         </p>
+        <div className="font-mono text-[11px] text-ink-soft flex gap-4 flex-wrap mb-8">
+          <span>🟡 Pending — outcome not yet resolved</span>
+          <span>🟢 Confirmed — matched the outcome within stated confidence</span>
+          <span>🔴 Missed — did not match the outcome</span>
+        </div>
 
         {loadError ? (
           <p className="font-mono text-sm text-warn">
