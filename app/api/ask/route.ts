@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
 import { pearson } from "@/lib/stats";
+import { callGemini } from "@/lib/gemini";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -238,26 +239,18 @@ export async function POST(req: NextRequest) {
   });
 
   for (let round = 0; round < 5; round++) {
-    const res = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent",
-      {
-        method: "POST",
-        headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-          tools: [{ function_declarations: FUNCTION_DECLARATIONS }],
-          contents,
-        }),
-      }
-    );
-
-    if (!res.ok) {
-      const errBody = await res.text();
-      return NextResponse.json({ error: `Gemini API error: ${res.status} ${errBody}` }, { status: 502 });
+    let result: Record<string, unknown>;
+    try {
+      result = await callGemini(apiKey, {
+        system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        tools: [{ function_declarations: FUNCTION_DECLARATIONS }],
+        contents,
+      });
+    } catch (err) {
+      return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 502 });
     }
 
-    const result = await res.json();
-    const candidate = result.candidates?.[0];
+    const candidate = (result.candidates as { content?: { parts?: GeminiPart[] } }[] | undefined)?.[0];
     const parts: GeminiPart[] = candidate?.content?.parts ?? [];
     contents.push({ role: "model", parts });
 

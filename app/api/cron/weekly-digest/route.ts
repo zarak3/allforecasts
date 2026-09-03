@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
 import { brierScore, reliabilityBuckets } from "@/lib/stats";
+import { callGemini } from "@/lib/gemini";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 // Generates the weekly digest content: real resolved predictions and real
 // new alerts from the last 7 days, plus current calibration stats (same
@@ -24,15 +25,10 @@ ${JSON.stringify(payload, null, 2)}
 
 Write a short weekly digest (resolved predictions this week, new alerts this week, current calibration snapshot). Plain text, no markdown headers, suitable as an email body.`;
 
-  const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent", {
-    method: "POST",
-    headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
-    body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] }),
-  });
-  if (!res.ok) throw new Error(`Gemini API error: ${res.status} ${await res.text()}`);
-  const result = await res.json();
-  const parts = result.candidates?.[0]?.content?.parts ?? [];
-  return parts.map((p: { text?: string }) => p.text ?? "").join("\n") || "(Gemini returned no text)";
+  const result = await callGemini(apiKey, { contents: [{ role: "user", parts: [{ text: prompt }] }] });
+  const candidate = (result.candidates as { content?: { parts?: { text?: string }[] } }[] | undefined)?.[0];
+  const parts = candidate?.content?.parts ?? [];
+  return parts.map((p) => p.text ?? "").join("\n") || "(Gemini returned no text)";
 }
 
 export async function GET(req: NextRequest) {
