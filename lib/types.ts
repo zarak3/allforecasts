@@ -70,11 +70,12 @@ export interface Alert {
   id: string;
   type: AlertType;
   entity_id: string | null;
-  indicator_id: string | null;
+  indicator_name: string | null;
   triggered_at: string;
   z_score: number | null;
   description: string | null;
   linked_prediction_id: string | null;
+  entity?: Entity | null;
 }
 
 export interface ConsensusBenchmark {

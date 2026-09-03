@@ -79,7 +79,9 @@ create table if not exists alerts (
   id uuid primary key default gen_random_uuid(),
   type text not null check (type in ('anomaly', 'event', 'surprise')),
   entity_id uuid references entities(id),
-  indicator_id uuid references indicators(id),
+  indicator_name text,          -- denormalized, not a FK -- the daily indicator refresh deletes
+                                 -- and re-inserts every indicators row, so a FK here would either
+                                 -- go dangling or block that refresh once any alert existed
   triggered_at timestamptz not null default now(),
   z_score numeric,
   description text,

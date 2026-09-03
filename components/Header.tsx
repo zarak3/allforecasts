@@ -17,6 +17,9 @@ export default function Header() {
           <Link href="/consensus" className="font-mono text-sm text-ink-soft no-underline hover:text-accent">
             Consensus
           </Link>
+          <Link href="/alerts" className="font-mono text-sm text-ink-soft no-underline hover:text-accent">
+            Alerts
+          </Link>
           <Link href="/countries" className="font-mono text-sm text-ink-soft no-underline hover:text-accent">
             Countries
           </Link>
