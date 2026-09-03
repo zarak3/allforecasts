@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
 import { brierScore, reliabilityBuckets } from "@/lib/stats";
 import { callGemini } from "@/lib/gemini";
+import { sendEmail } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -11,11 +12,10 @@ export const maxDuration = 60;
 // computation as /api/public/calibration), then has an LLM narrate that
 // real data into a plain-language summary -- the same "stats compute, AI
 // narrates" split as everywhere else, never inventing a number itself.
-//
-// Doesn't send anything yet -- there's no email-sending service configured
-// (a separate real decision from the model this runs on). This returns the
-// generated digest as JSON so it can be reviewed/wired to a real send step
-// once that's chosen.
+// Emails it via Resend if RESEND_API_KEY and DIGEST_RECIPIENT_EMAIL are
+// both set -- otherwise returns the generated digest as JSON without
+// sending anything, same graceful "not configured" degradation as every
+// other optional integration on this site.
 //
 // Same Gemini-primary, Groq-fallback pattern as Zeno (app/api/ask), for the
 // same reason -- confirmed live that Gemini's free tier caps at 20
@@ -108,21 +108,44 @@ export async function GET(req: NextRequest) {
     },
   };
 
+  let digest: string;
+  let narratedBy: "gemini" | "groq";
   if (geminiKey) {
     try {
-      const digest = await narrateWithGemini(geminiKey, payload);
-      return NextResponse.json({ digest, data: payload, narrated_by: "gemini" });
+      digest = await narrateWithGemini(geminiKey, payload);
+      narratedBy = "gemini";
     } catch (err) {
       if (!isQuotaError(err) || !groqKey) {
         return NextResponse.json({ error: err instanceof Error ? err.message : String(err), data: payload }, { status: 502 });
       }
+      try {
+        digest = await narrateWithGroq(groqKey, payload);
+        narratedBy = "groq";
+      } catch (err2) {
+        return NextResponse.json({ error: err2 instanceof Error ? err2.message : String(err2), data: payload }, { status: 502 });
+      }
+    }
+  } else {
+    try {
+      digest = await narrateWithGroq(groqKey!, payload);
+      narratedBy = "groq";
+    } catch (err) {
+      return NextResponse.json({ error: err instanceof Error ? err.message : String(err), data: payload }, { status: 502 });
     }
   }
 
-  try {
-    const digest = await narrateWithGroq(groqKey!, payload);
-    return NextResponse.json({ digest, data: payload, narrated_by: "groq" });
-  } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : String(err), data: payload }, { status: 502 });
+  const resendKey = process.env.RESEND_API_KEY;
+  const recipient = process.env.DIGEST_RECIPIENT_EMAIL;
+  let emailed = false;
+  let emailError: string | null = null;
+  if (resendKey && recipient) {
+    try {
+      await sendEmail(resendKey, recipient, "AllForecasts — weekly digest", digest);
+      emailed = true;
+    } catch (err) {
+      emailError = err instanceof Error ? err.message : String(err);
+    }
   }
+
+  return NextResponse.json({ digest, data: payload, narrated_by: narratedBy, emailed, email_error: emailError });
 }
