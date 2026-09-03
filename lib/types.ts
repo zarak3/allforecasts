@@ -21,6 +21,14 @@ export interface Indicator {
 }
 
 export type PredictionStatus = "pending" | "confirmed" | "missed";
+export type MissCause = "structural_break" | "weak_signal" | "outlier_event" | "consensus_was_right";
+
+export const MISS_CAUSE_LABEL: Record<MissCause, string> = {
+  structural_break: "Structural break",
+  weak_signal: "Weak signal",
+  outlier_event: "Outlier event",
+  consensus_was_right: "Consensus was simply right",
+};
 
 export interface Prediction {
   id: string;
@@ -41,6 +49,7 @@ export interface Prediction {
   status: PredictionStatus | null;
   resolved_at: string | null;
   related_relationship_ids: string[] | null;
+  miss_cause: MissCause | null;
 }
 
 export interface Relationship {
@@ -74,5 +83,8 @@ export interface ConsensusBenchmark {
   release_date: string | null;
   consensus_value: number | null;
   our_prediction_id: string | null;
+  our_predicted_value: number | null;
   actual_value: number | null;
+  entity?: Entity | null;
+  prediction?: Pick<Prediction, "id" | "title"> | null;
 }

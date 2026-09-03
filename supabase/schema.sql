@@ -47,7 +47,9 @@ create table if not exists predictions (
   falsification_condition text,        -- "What would prove this wrong" -- mandatory in spirit, nullable in schema for backward compat
   status text check (status in ('pending', 'confirmed', 'missed')),
   resolved_at timestamptz,             -- when the outcome was actually confirmed, distinct from resolves_at (when it was due)
-  related_relationship_ids uuid[]      -- links to relationships table once a call cites a specific discovered lag relationship
+  related_relationship_ids uuid[],     -- links to relationships table once a call cites a specific discovered lag relationship
+  miss_cause text check (miss_cause in ('structural_break', 'weak_signal', 'outlier_event', 'consensus_was_right'))
+    -- classified by hand once a miss's cause is actually identifiable; null when it isn't
 );
 
 -- Real lead-lag relationships discovered between two indicators. Starts
@@ -88,6 +90,7 @@ create table if not exists consensus_benchmarks (
   release_date date,
   consensus_value numeric,
   our_prediction_id uuid references predictions(id),
+  our_predicted_value numeric,  -- our point estimate as a plain number, alongside the free-text call on predictions -- needed to compare surprise direction against consensus/actual cleanly
   actual_value numeric
 );
 

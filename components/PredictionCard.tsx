@@ -91,6 +91,12 @@ export default function PredictionCard({ prediction, tag }: { prediction: Predic
           {prediction.falsification_condition}
         </p>
       )}
+
+      {prediction.published_at && (
+        <a href={`/predictions/${prediction.id}/note`} className="font-mono text-[11px] text-accent mt-3 inline-block">
+          Export as research note →
+        </a>
+      )}
     </div>
   );
 }

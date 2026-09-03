@@ -1,6 +1,7 @@
 import { supabaseServer } from "@/lib/supabase";
 import { displayCountryName } from "@/lib/display-name";
-import type { Prediction } from "@/lib/types";
+import { brierScore, reliabilityBuckets } from "@/lib/stats";
+import { MISS_CAUSE_LABEL, type Prediction } from "@/lib/types";
 
 export const revalidate = 900;
 export const metadata = {
@@ -60,6 +61,12 @@ export default async function BacktestPage() {
   const bestCall = [...confirmed].sort((a, b) => (b.confidence_pct ?? 0) - (a.confidence_pct ?? 0))[0] ?? null;
   const worstCall = [...missed].sort((a, b) => (b.confidence_pct ?? 0) - (a.confidence_pct ?? 0))[0] ?? null;
 
+  const withConfidenceForCalibration = predictions
+    .filter((p) => p.confidence_pct !== null)
+    .map((p) => ({ confidencePct: p.confidence_pct as number, correct: resolveStatus(p) === "confirmed" }));
+  const brier = brierScore(withConfidenceForCalibration.map((f) => ({ probability: f.confidencePct / 100, correct: f.correct })));
+  const buckets = reliabilityBuckets(withConfidenceForCalibration);
+
   return (
     <main className="section pt-16">
       <div className="max-w-4xl mx-auto px-6">
@@ -118,8 +125,51 @@ export default async function BacktestPage() {
             {withConfidence.length < n && (
               <p className="font-mono text-[11px] text-ink-soft mb-8">
                 {n - withConfidence.length} of {n} resolved calls predate the confidence-% field and
-                aren&apos;t included in the calibration stats above.
+                aren&apos;t included in the calibration stats below.
               </p>
+            )}
+
+            <h2 className="section-title">Calibration</h2>
+            <p className="text-sm text-ink-soft mb-4">
+              Raw accuracy can be misleading — a model that&apos;s right 70% of the time when it claims
+              95% confidence is a <i>worse</i> forecaster than one that&apos;s right 60% of the time when
+              it claims 60%. Calibration checks whether stated confidence actually tracks with real
+              outcomes.
+            </p>
+            {withConfidenceForCalibration.length === 0 ? (
+              <p className="font-mono text-sm text-ink-soft mb-12">
+                No resolved calls have a stated confidence % yet.
+              </p>
+            ) : (
+              <div className="mb-12">
+                <div className="card px-5 py-4 inline-block mb-4">
+                  <div className="font-mono text-2xl text-ink">{brier?.toFixed(3) ?? "—"}</div>
+                  <div className="font-mono text-[11px] uppercase tracking-wide text-ink-soft">
+                    Brier score (0 = perfect, 0.25 = coin-flip, 1 = worst)
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  {buckets.map((b) => (
+                    <div key={b.bucketLabel} className="flex items-center gap-3">
+                      <span className="font-mono text-xs text-ink-soft w-20 shrink-0">{b.bucketLabel}</span>
+                      {b.actualHitRatePct !== null ? (
+                        <>
+                          <div className="flex-1 h-2 bg-paper-raised rounded-full overflow-hidden">
+                            <div className="h-full bg-accent rounded-full" style={{ width: `${b.actualHitRatePct}%` }} />
+                          </div>
+                          <span className="font-mono text-xs text-ink w-24 shrink-0 text-right">
+                            {b.actualHitRatePct}% actual (n={b.n})
+                          </span>
+                        </>
+                      ) : (
+                        <span className="font-mono text-xs text-ink-soft italic">
+                          insufficient data (n={b.n}, need 10+)
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
 
             {(bestCall || worstCall) && (
@@ -166,7 +216,12 @@ export default async function BacktestPage() {
                       </span>
                       <span className="font-mono text-xs text-ink-soft shrink-0">{formatDate(p.resolved_at ?? p.resolves_at)}</span>
                     </div>
-                    {p.outcome && <p className="text-sm text-ink-soft">{p.outcome}</p>}
+                    {p.outcome && <p className="text-sm text-ink-soft mb-1">{p.outcome}</p>}
+                    <span
+                      className={`font-mono text-[11px] uppercase tracking-wide ${p.miss_cause ? "text-warn" : "text-ink-soft italic"}`}
+                    >
+                      {p.miss_cause ? MISS_CAUSE_LABEL[p.miss_cause] : "Cause not yet classified"}
+                    </span>
                   </div>
                 ))}
               </div>

@@ -48,6 +48,78 @@ export function linearTrendForecast(points: { x: number; y: number }[], stepsAhe
   return slope * targetX + intercept;
 }
 
+// Brier score: mean squared error between stated probability (0-1) and the
+// actual binary outcome. 0 = perfect, 0.25 = a coin-flip-informative
+// forecaster, 1 = maximally wrong every time. The standard way to score a
+// probabilistic forecaster -- rewards being right AND well-calibrated, not
+// just right.
+export function brierScore(forecasts: { probability: number; correct: boolean }[]): number | null {
+  if (forecasts.length === 0) return null;
+  const sum = forecasts.reduce((acc, f) => acc + (f.probability - (f.correct ? 1 : 0)) ** 2, 0);
+  return sum / forecasts.length;
+}
+
+export interface ReliabilityBucket {
+  bucketLabel: string; // e.g. "60-70%"
+  bucketMid: number; // 65
+  n: number;
+  actualHitRatePct: number | null; // null when n is too small to plot honestly
+}
+
+// Groups resolved forecasts into 10-point confidence buckets and computes
+// the ACTUAL hit rate within each -- the reliability-diagram data. Buckets
+// with fewer than `minBucketN` forecasts are returned with a null hit rate
+// rather than a misleading point plotted from a handful of calls.
+export function reliabilityBuckets(
+  forecasts: { confidencePct: number; correct: boolean }[],
+  minBucketN = 10
+): ReliabilityBucket[] {
+  const buckets = new Map<number, { n: number; hits: number }>();
+  for (const f of forecasts) {
+    const bucketStart = Math.min(90, Math.floor(f.confidencePct / 10) * 10);
+    const entry = buckets.get(bucketStart) ?? { n: 0, hits: 0 };
+    entry.n += 1;
+    if (f.correct) entry.hits += 1;
+    buckets.set(bucketStart, entry);
+  }
+  return Array.from(buckets.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map(([start, { n, hits }]) => ({
+      bucketLabel: `${start}-${start + 10}%`,
+      bucketMid: start + 5,
+      n,
+      actualHitRatePct: n >= minBucketN ? Math.round((hits / n) * 100) : null,
+    }));
+}
+
+export interface SurpriseCall {
+  consensusValue: number;
+  ourPredictedValue: number;
+  actualValue: number;
+}
+
+export interface SurpriseIndexResult {
+  callsWithRealSurprise: number; // rows where actual actually diverged from consensus
+  calledCorrectly: number; // of those, how many we predicted on the same side as the actual surprise
+  hitRatePct: number | null; // null when there's nothing to score yet
+}
+
+// Did we call the SURPRISE DIRECTION correctly relative to consensus -- a
+// harder, more specific test than raw accuracy. A row with actual ==
+// consensus has no surprise to call, so it's excluded rather than counted
+// either way.
+export function surpriseIndex(calls: SurpriseCall[]): SurpriseIndexResult {
+  const withSurprise = calls.filter((c) => c.actualValue !== c.consensusValue);
+  const correct = withSurprise.filter(
+    (c) => Math.sign(c.ourPredictedValue - c.consensusValue) === Math.sign(c.actualValue - c.consensusValue)
+  );
+  return {
+    callsWithRealSurprise: withSurprise.length,
+    calledCorrectly: correct.length,
+    hitRatePct: withSurprise.length > 0 ? Math.round((correct.length / withSurprise.length) * 100) : null,
+  };
+}
+
 interface YearSeries {
   year: number;
   value: number;

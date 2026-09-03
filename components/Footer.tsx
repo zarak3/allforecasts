@@ -2,7 +2,7 @@ import { EmailIcon, XIcon, InstagramIcon } from "@/components/SocialIcons";
 
 export default function Footer() {
   return (
-    <footer className="border-t border-line py-10 font-mono text-xs text-ink-soft">
+    <footer className="print:hidden border-t border-line py-10 font-mono text-xs text-ink-soft">
       <div className="max-w-4xl mx-auto px-6">
         <p className="max-w-2xl mb-4">
           Nothing on this site is financial advice. Forecasts are probabilistic estimates for

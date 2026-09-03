@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function Header() {
   return (
-    <header className="border-b border-line py-5">
+    <header className="print:hidden border-b border-line py-5">
       <div className="max-w-4xl mx-auto px-6 flex items-baseline justify-between flex-wrap gap-2">
         <Link href="/" className="font-wordmark font-semibold text-xl tracking-tight text-ink no-underline whitespace-nowrap">
           AllForecasts
@@ -13,6 +13,9 @@ export default function Header() {
           </Link>
           <Link href="/backtest" className="font-mono text-sm text-ink-soft no-underline hover:text-accent">
             Backtest
+          </Link>
+          <Link href="/consensus" className="font-mono text-sm text-ink-soft no-underline hover:text-accent">
+            Consensus
           </Link>
           <Link href="/countries" className="font-mono text-sm text-ink-soft no-underline hover:text-accent">
             Countries

@@ -15,7 +15,7 @@ export default function AskWidget() {
   return (
     <Link
       href="/zeno"
-      className="fixed bottom-5 right-5 z-50 font-mono text-sm bg-accent text-paper pl-3 pr-4 py-2.5 rounded-full shadow-lg hover:opacity-90 transition no-underline inline-flex items-center gap-1.5"
+      className="print:hidden fixed bottom-5 right-5 z-50 font-mono text-sm bg-accent text-paper pl-3 pr-4 py-2.5 rounded-full shadow-lg hover:opacity-90 transition no-underline inline-flex items-center gap-1.5"
     >
       <ZenoLogo size={16} />
       Ask Zeno
