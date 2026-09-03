@@ -161,3 +161,34 @@ export function lagCorrelation(seriesA: YearSeries[], seriesB: YearSeries[], lag
   );
   return { r, n: points.length, points };
 }
+
+// Standard bivariate propagation: if A moves by k standard deviations of
+// A's own real history, the correlation r implies B's EXPECTED movement is
+// r*k standard deviations of B's own real history -- the textbook formula
+// for a linear relationship between two standardized variables, not an
+// invented rule. Deliberately simple and explicit about being an estimate:
+// this propagates a single correlation coefficient, not a fitted causal
+// model, and the caller is responsible for surfacing r and n so nobody
+// mistakes the output for more certain than a real, limited-sample
+// correlation actually supports.
+export function propagateViaCorrelation(
+  changedValue: number,
+  originalValue: number,
+  stdevA: number,
+  stdevB: number,
+  baselineB: number,
+  r: number
+): number | null {
+  if (stdevA === 0) return null;
+  const deltaAInStdev = (changedValue - originalValue) / stdevA;
+  const deltaBInStdev = r * deltaAInStdev;
+  return baselineB + deltaBInStdev * stdevB;
+}
+
+export function stdev(values: number[]): number {
+  const n = values.length;
+  if (n === 0) return 0;
+  const mean = values.reduce((a, b) => a + b, 0) / n;
+  const variance = values.reduce((a, b) => a + (b - mean) ** 2, 0) / n;
+  return Math.sqrt(variance);
+}

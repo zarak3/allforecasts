@@ -55,13 +55,16 @@ export interface Prediction {
 
 export interface Relationship {
   id: string;
+  entity_id: string | null;
   indicator_a_name: string;
   indicator_b_name: string;
   lag_period: string | null;
   correlation_strength: number | null;
+  sample_size: number | null;
   granger_p_value: number | null; // reserved -- null until a real Granger test is implemented
   discovered_at: string;
   status: "active" | "invalidated";
+  entity?: Entity | null;
 }
 
 export type AlertType = "anomaly" | "event" | "surprise";

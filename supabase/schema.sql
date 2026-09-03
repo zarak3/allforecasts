@@ -63,10 +63,12 @@ create table if not exists predictions (
 -- validated, never backfilled with placeholder rows.
 create table if not exists relationships (
   id uuid primary key default gen_random_uuid(),
+  entity_id uuid references entities(id),  -- lag-correlations are country-specific (one country's own history), same as the live LagCorrelationTool -- a relationship with no entity scope can't be honestly represented
   indicator_a_name text not null,
   indicator_b_name text not null,
   lag_period text,                     -- e.g. '6 weeks', '1 quarter'
   correlation_strength numeric,        -- Pearson r from lib/stats.ts -- the method actually implemented
+  sample_size integer,                 -- n behind correlation_strength -- the honesty check a bare r hides
   granger_p_value numeric,             -- reserved for a real Granger causality test; null until that's actually built, never faked
   discovered_at timestamptz not null default now(),
   status text not null default 'active' check (status in ('active', 'invalidated'))

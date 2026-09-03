@@ -4,8 +4,9 @@ import { interpretPair } from "@/lib/insight-meaning";
 import { displayCountryName } from "@/lib/display-name";
 import LagCorrelationTool from "@/components/LagCorrelationTool";
 import ProjectionTool from "@/components/ProjectionTool";
+import ScenarioTool from "@/components/ScenarioTool";
 import PatternBrowser, { type PatternPair } from "@/components/PatternBrowser";
-import type { Entity } from "@/lib/types";
+import type { Entity, Relationship } from "@/lib/types";
 
 export const revalidate = 3600;
 export const metadata = {
@@ -95,8 +96,23 @@ async function computeCorrelations(): Promise<{ pairs: PairResult[]; entities: E
   }
 }
 
+async function getRelationships(): Promise<Relationship[]> {
+  try {
+    const supabase = supabaseServer();
+    const { data } = await supabase
+      .from("relationships")
+      .select("*, entity:entities(name, code)")
+      .eq("status", "active")
+      .order("correlation_strength", { ascending: false });
+    return (data as unknown as Relationship[]) ?? [];
+  } catch {
+    return [];
+  }
+}
+
 export default async function CorrelationsPage() {
   const { pairs, entities, loadError } = await computeCorrelations();
+  const relationships = await getRelationships();
   const crossCategory = pairs.filter((p) => p.categoryA !== p.categoryB);
   const top: PatternPair[] = crossCategory.slice(0, 12).map((p) => {
     const { meaning, personas } = interpretPair(p.a, p.categoryA, p.b, p.categoryB, p.r);
@@ -127,6 +143,13 @@ export default async function CorrelationsPage() {
 
             <h2 className="section-title mt-10 mb-4">Project one indicator forward</h2>
             <ProjectionTool entities={entityOptions} />
+
+            {relationships.length > 0 && (
+              <>
+                <h2 className="section-title mt-10 mb-4">Scenario: nudge one indicator, see the propagated effect</h2>
+                <ScenarioTool relationships={relationships} />
+              </>
+            )}
 
             <div className="mt-8">
               <PatternBrowser pairs={top} totalPairs={pairs.length} crossCategoryCount={crossCategory.length} />
