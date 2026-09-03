@@ -2,6 +2,19 @@
 // this is exactly the kind of number the LLM narration layer must never
 // invent; it has to come from real arithmetic over real data.
 
+// Standard z-score of each value against the set's own mean/stdev --
+// what puts differently-scaled indicators (USD, %, years) on a common
+// footing before averaging them into a composite score.
+export function zScores(values: number[]): number[] {
+  const n = values.length;
+  if (n === 0) return [];
+  const mean = values.reduce((a, b) => a + b, 0) / n;
+  const variance = values.reduce((a, b) => a + (b - mean) ** 2, 0) / n;
+  const stdev = Math.sqrt(variance);
+  if (stdev === 0) return values.map(() => 0);
+  return values.map((v) => (v - mean) / stdev);
+}
+
 export function pearson(xs: number[], ys: number[]): number | null {
   const n = xs.length;
   if (n < 8 || n !== ys.length) return null; // require a minimum sample size

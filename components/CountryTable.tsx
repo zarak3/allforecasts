@@ -34,7 +34,17 @@ const CATEGORY_LABELS: Record<string, string> = {
   demographic: "Demographic",
   defence: "Defence",
   trade: "Trade",
+  composite: "Composite scores (AllForecasts model)",
 };
+
+const REGIME_LABELS: Record<string, string> = { "-1": "Contraction", "0": "Slowdown", "1": "Expansion" };
+
+function formatCellValue(row: Indicator) {
+  if (row.name.startsWith("Macro regime")) {
+    return REGIME_LABELS[String(Math.round(row.value))] ?? formatValue(row.value, row.unit);
+  }
+  return formatValue(row.value, row.unit);
+}
 
 function CountryStatCards({ rows }: { rows: Indicator[] }) {
   const grouped = useMemo(() => {
@@ -55,7 +65,7 @@ function CountryStatCards({ rows }: { rows: Indicator[] }) {
             {items.map((row) => (
               <div key={row.id} className="card p-4">
                 <div className="text-xs text-ink-soft mb-1">{row.name}</div>
-                <div className="font-mono text-xl text-ink">{formatValue(row.value, row.unit)}</div>
+                <div className="font-mono text-xl text-ink">{formatCellValue(row)}</div>
                 <div className="font-mono text-[11px] text-ink-soft mt-1">
                   {new Date(row.period).getUTCFullYear()} · {row.source}
                 </div>
@@ -155,7 +165,7 @@ export default function CountryTable({
                     {displayCountryName(row.entity?.code, row.entity?.name ?? "")}
                   </td>
                   <td className="py-2.5 border-b border-line">{row.name}</td>
-                  <td className="py-2.5 border-b border-line font-mono">{formatValue(row.value, row.unit)}</td>
+                  <td className="py-2.5 border-b border-line font-mono">{formatCellValue(row)}</td>
                   <td className="py-2.5 border-b border-line font-mono">
                     {new Date(row.period).getUTCFullYear()}
                   </td>

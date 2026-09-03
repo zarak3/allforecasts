@@ -6,7 +6,7 @@ import {
   fetchWorldBankIndicatorForAllCountries,
   fetchWorldBankHistoryForAllCountries,
 } from "@/lib/worldbank";
-import { linearTrendForecast } from "@/lib/stats";
+import { linearTrendForecast, zScores } from "@/lib/stats";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -67,10 +67,15 @@ export async function GET(req: NextRequest) {
   }
 
   const rows: Record<string, unknown>[] = [];
+  // Captured alongside the raw insert rows for the Country Risk Scorecard
+  // below -- cross-sectional (all countries, this indicator) real values,
+  // reused rather than re-fetched.
+  const byIndicatorCountry = new Map<string, Map<string, number>>();
 
   for (const [code, meta] of Object.entries(WORLD_BANK_INDICATORS)) {
     try {
       const entries = await fetchWorldBankIndicatorForAllCountries(code, countryCodes);
+      const countryValues = new Map<string, number>();
       for (const entry of entries) {
         const entityId = entityIdByCode[entry.countryiso2code];
         if (!entityId || entry.value === null) continue;
@@ -84,7 +89,9 @@ export async function GET(req: NextRequest) {
           unit: meta.unit,
           period: `${entry.date}-01-01`,
         });
+        countryValues.set(entry.countryiso2code, entry.value);
       }
+      byIndicatorCountry.set(code, countryValues);
     } catch (err) {
       errors.push(err instanceof Error ? err.message : String(err));
     }
@@ -119,6 +126,95 @@ export async function GET(req: NextRequest) {
         value: projected,
         unit: "%",
         period: `${Math.max(lastYear + 1, currentYear)}-01-01`,
+      });
+    }
+
+    // Macro Regime Classifier: a simple, fully transparent rule over the
+    // same real GDP growth history just fetched above -- latest growth
+    // <=0 is a contraction; positive and accelerating (>= the prior year)
+    // is an expansion; positive but decelerating is a slowdown. This
+    // describes the CURRENT real state, not a forecast -- deliberately no
+    // backtested "accuracy %" is claimed for it, since that would need an
+    // authoritative regime-dating ground truth (NBER-style) that only
+    // exists for the US, not for Pakistan or most other countries, and
+    // holding one country to a different validation standard than the
+    // rest would be worse than not claiming a number at all.
+    for (const [code, points] of byCountry) {
+      const entityId = entityIdByCode[code];
+      if (!entityId || points.length < 2) continue;
+      const sorted = [...points].sort((a, b) => a.x - b.x);
+      const latest = sorted[sorted.length - 1];
+      const prev = sorted[sorted.length - 2];
+      const regime = latest.y <= 0 ? -1 : latest.y >= prev.y ? 1 : 0;
+      rows.push({
+        entity_id: entityId,
+        name: "Macro regime (rule-based)",
+        category: "composite",
+        source: "AllForecasts model",
+        source_code: "MODEL.REGIME",
+        value: regime,
+        unit: "-1=contraction, 0=slowdown, 1=expansion",
+        period: `${Math.max(latest.x + 1, currentYear)}-01-01`,
+      });
+    }
+  } catch (err) {
+    errors.push(err instanceof Error ? err.message : String(err));
+  }
+
+  // Country Risk Scorecard: equal-weighted average of real cross-sectional
+  // z-scores across 7 World Bank indicators already fetched above (higher
+  // = healthier; indicators where higher is normally worse -- unemployment,
+  // inflation, infant mortality, government debt -- are sign-flipped
+  // before averaging). Deliberately simple and fully disclosed rather than
+  // a "sophisticated" weighting scheme this project can't defend. Scored
+  // only for countries with at least 5 of the 7 real values present --
+  // World Bank coverage is genuinely spotty for some series (literacy
+  // rate especially), and averaging over fewer than that would lean too
+  // heavily on 1-2 indicators to call it a composite.
+  try {
+    const COMPOSITE_INDICATORS: { code: string; higherIsBetter: boolean }[] = [
+      { code: "NY.GDP.PCAP.CD", higherIsBetter: true },
+      { code: "SL.UEM.TOTL.ZS", higherIsBetter: false },
+      { code: "FP.CPI.TOTL.ZG", higherIsBetter: false },
+      { code: "SP.DYN.LE00.IN", higherIsBetter: true },
+      { code: "SP.DYN.IMRT.IN", higherIsBetter: false },
+      { code: "SE.ADT.LITR.ZS", higherIsBetter: true },
+      { code: "GC.DOD.TOTL.GD.ZS", higherIsBetter: false },
+    ];
+    const MIN_COMPOSITE_INDICATORS = 5;
+    const currentYear = new Date().getUTCFullYear();
+
+    const zByIndicator = new Map<string, Map<string, number>>();
+    for (const { code } of COMPOSITE_INDICATORS) {
+      const countryValues = byIndicatorCountry.get(code);
+      if (!countryValues || countryValues.size === 0) continue;
+      const codes = Array.from(countryValues.keys());
+      const z = zScores(codes.map((c) => countryValues.get(c) as number));
+      const map = new Map<string, number>();
+      codes.forEach((c, i) => map.set(c, z[i]));
+      zByIndicator.set(code, map);
+    }
+
+    for (const countryCode of countryCodes) {
+      const entityId = entityIdByCode[countryCode];
+      if (!entityId) continue;
+      const contributions: number[] = [];
+      for (const { code, higherIsBetter } of COMPOSITE_INDICATORS) {
+        const z = zByIndicator.get(code)?.get(countryCode);
+        if (z === undefined) continue;
+        contributions.push(higherIsBetter ? z : -z);
+      }
+      if (contributions.length < MIN_COMPOSITE_INDICATORS) continue;
+      const score = contributions.reduce((a, b) => a + b, 0) / contributions.length;
+      rows.push({
+        entity_id: entityId,
+        name: "Country Risk Scorecard (composite z-score)",
+        category: "composite",
+        source: "AllForecasts model",
+        source_code: "MODEL.RISK.SCORE",
+        value: score,
+        unit: "z-score",
+        period: `${currentYear}-01-01`,
       });
     }
   } catch (err) {
