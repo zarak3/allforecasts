@@ -48,8 +48,14 @@ create table if not exists predictions (
   status text check (status in ('pending', 'confirmed', 'missed')),
   resolved_at timestamptz,             -- when the outcome was actually confirmed, distinct from resolves_at (when it was due)
   related_relationship_ids uuid[],     -- links to relationships table once a call cites a specific discovered lag relationship
-  miss_cause text check (miss_cause in ('structural_break', 'weak_signal', 'outlier_event', 'consensus_was_right'))
+  miss_cause text check (miss_cause in ('structural_break', 'weak_signal', 'outlier_event', 'consensus_was_right')),
     -- classified by hand once a miss's cause is actually identifiable; null when it isn't
+  is_backtest boolean not null default false
+    -- true = a retrospective walk-forward run of the model against real historical
+    -- data, generated after the fact -- never shown as a live, real-time-published
+    -- call. false (default) = an actual prediction genuinely made before the
+    -- outcome was known. The Predictions/Notable Calls page only shows false;
+    -- the Backtest page is where is_backtest=true rows live.
 );
 
 -- Real lead-lag relationships discovered between two indicators. Starts

@@ -41,6 +41,8 @@ export default async function BacktestPage() {
   const missed = predictions.filter((p) => resolveStatus(p) === "missed");
   const n = predictions.length;
   const hitRate = n > 0 ? Math.round((confirmed.length / n) * 100) : null;
+  const backtestCount = predictions.filter((p) => p.is_backtest).length;
+  const liveCount = n - backtestCount;
 
   const withConfidence = predictions.filter((p) => p.confidence_pct !== null);
   const avgConfidenceHits =
@@ -92,10 +94,17 @@ export default async function BacktestPage() {
         ) : (
           <>
             {n < 10 && (
-              <p className="font-mono text-xs text-warn mb-6">
+              <p className="font-mono text-xs text-warn mb-3">
                 Based on {n} resolved forecast{n === 1 ? "" : "s"} — the sample is still small; we&apos;ll
                 expand this as the model runs longer. Treat this as an early read, not a settled track
                 record.
+              </p>
+            )}
+            {backtestCount > 0 && (
+              <p className="font-mono text-xs text-ink-soft mb-6">
+                {backtestCount} of {n} below are 🔬 backtested (a retrospective run of the model
+                against real historical data, not a real-time call) — {liveCount} are 📡 actually
+                published live predictions.
               </p>
             )}
 
@@ -211,6 +220,7 @@ export default async function BacktestPage() {
                   <div key={p.id} className="card p-5">
                     <div className="flex items-baseline justify-between gap-3 mb-1">
                       <span className="text-sm text-ink">
+                        <span className="font-mono text-[10px] text-ink-soft mr-1.5">{p.is_backtest ? "🔬" : "📡"}</span>
                         {p.entity ? `${displayCountryName(p.entity.code, p.entity.name)} — ` : ""}
                         {p.title}
                       </span>
@@ -228,10 +238,16 @@ export default async function BacktestPage() {
             )}
 
             <h2 className="section-title">All resolved calls</h2>
+            <p className="font-mono text-[11px] text-ink-soft mb-4">
+              🔬 Backtest = a retrospective run of the model against real historical data, done
+              after the fact, using only data that would have been available at that point. 📡 Live
+              = an actual call, published before the outcome was known. Never conflated.
+            </p>
             <div className="flex flex-col gap-3">
               {predictions.map((p) => (
                 <div key={p.id} className="card p-5 flex items-baseline justify-between gap-3">
                   <span className="text-sm text-ink">
+                    <span className="font-mono text-[10px] text-ink-soft mr-1.5">{p.is_backtest ? "🔬" : "📡"}</span>
                     {p.entity ? `${displayCountryName(p.entity.code, p.entity.name)} — ` : ""}
                     {p.title}
                   </span>

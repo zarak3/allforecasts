@@ -50,6 +50,7 @@ export interface Prediction {
   resolved_at: string | null;
   related_relationship_ids: string[] | null;
   miss_cause: MissCause | null;
+  is_backtest: boolean;
 }
 
 export interface Relationship {

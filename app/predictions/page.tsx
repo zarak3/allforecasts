@@ -16,6 +16,7 @@ async function getPredictions(): Promise<{ predictions: Prediction[]; loadError:
     const { data, error } = await supabase
       .from("predictions")
       .select("*, entity:entities(id, type, name, code)")
+      .eq("is_backtest", false)
       .order("resolves_at", { ascending: true });
     if (error) throw new Error(error.message);
     return { predictions: (data as unknown as Prediction[]) ?? [], loadError: null };
