@@ -32,6 +32,9 @@ export default function Header() {
           <Link href="/markets" prefetch={false} className="font-mono text-sm text-ink-soft no-underline hover:text-accent">
             Markets
           </Link>
+          <Link href="/stocks" prefetch={false} className="font-mono text-sm text-ink-soft no-underline hover:text-accent">
+            Stocks
+          </Link>
           <Link href="/zeno" className="font-mono text-sm text-ink-soft no-underline hover:text-accent">
             Zeno
           </Link>

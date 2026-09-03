@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/check-alerts",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/refresh-stocks",
+      "schedule": "0 8 * * *"
     }
   ]
 }
